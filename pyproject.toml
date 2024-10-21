@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "oculography-nn"
+version = "0.1.0"
+description = ""
+authors = ["Michał Nożkiewicz <michno513@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+jupyter = "^1.1.1"
+numpy = "^2.1.2"
+pandas = "^2.2.3"
+pillow = "^11.0.0"
+matplotlib = "^3.9.2"
+torch = "^2.5.0"
+torchvision = "^0.20.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
