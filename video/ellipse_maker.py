@@ -241,10 +241,13 @@ class VideoEditor(QMainWindow):
                 self.finalize_ellipse()
             elif self.is_dragging_point:
                 self.is_dragging_point = False
+                self.finalize_ellipse()
             elif self.is_rotating:
                 self.is_rotating = False
+                self.finalize_ellipse()
             elif self.is_dragging_ellipse:
                 self.is_dragging_ellipse = False
+                self.finalize_ellipse()
 
     def update_drawing_ellipse(self):
         center = ((self.start_point.x() + self.end_point.x()) // 2, (self.start_point.y() + self.end_point.y()) // 2)
