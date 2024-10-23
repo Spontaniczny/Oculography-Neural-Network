@@ -103,6 +103,9 @@ class VideoEditor(QMainWindow):
         self.frame_label.setText(f"Current Frame: {frame_idx}")
 
     def update_video_display(self):
+        if self.current_frame is None:
+            return
+
         # Convert frame to RGB for display in QLabel
         frame_rgb = cv2.cvtColor(self.current_frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame_rgb.shape
@@ -112,23 +115,25 @@ class VideoEditor(QMainWindow):
         pixmap = QPixmap.fromImage(qimage)
         painter = QPainter(pixmap)
         painter.setOpacity(0.5)  # Make ellipses transparent
-        if self.ellipse_center:
-            # Draw ellipse
-            painter.setBrush(QColor(255, 255, 255, 127))
-            painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
-            rect = QRectF(
-                int(self.ellipse_center[0] - self.ellipse_size[0]), int(self.ellipse_center[1] - self.ellipse_size[1]),
-                int(2 * self.ellipse_size[0]), int(2 * self.ellipse_size[1])
-            )
-            painter.save()
-            painter.translate(int(self.ellipse_center[0]), int(self.ellipse_center[1]))
-            painter.rotate(self.ellipse_angle)
-            painter.translate(-int(self.ellipse_center[0]), -int(self.ellipse_center[1]))
-            painter.drawEllipse(rect)
-            painter.restore()
+        if self.ellipse_center and self.ellipse_size:
+            if sum(self.ellipse_size) > 1:  # Ensure the ellipse size is valid
+                # Draw ellipse
+                painter.setBrush(QColor(255, 255, 255, 127))
+                painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
+                rect = QRectF(
+                    int(self.ellipse_center[0] - self.ellipse_size[0]),
+                    int(self.ellipse_center[1] - self.ellipse_size[1]),
+                    int(2 * self.ellipse_size[0]), int(2 * self.ellipse_size[1])
+                )
+                painter.save()
+                painter.translate(int(self.ellipse_center[0]), int(self.ellipse_center[1]))
+                painter.rotate(self.ellipse_angle)
+                painter.translate(-int(self.ellipse_center[0]), -int(self.ellipse_center[1]))
+                painter.drawEllipse(rect)
+                painter.restore()
 
-            # Draw resizing control points and rotation handle
-            self.draw_control_points(painter)
+                # Draw resizing control points and rotation handle
+                self.draw_control_points(painter)
 
         painter.end()
         self.video_label.setPixmap(pixmap)
@@ -185,7 +190,8 @@ class VideoEditor(QMainWindow):
         pos = event.pos() - self.video_label.pos()
 
         # Check if rotating based on proximity to rotation handle
-        if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(pos.y() - self.rotation_handle[1]) < 10:
+        if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(
+                pos.y() - self.rotation_handle[1]) < 10:
             self.is_rotating = True
             self.start_point = pos
             self.initial_angle = math.degrees(math.atan2(self.start_point.y() - self.ellipse_center[1],
@@ -250,18 +256,48 @@ class VideoEditor(QMainWindow):
                 self.finalize_ellipse()
 
     def update_drawing_ellipse(self):
-        center = ((self.start_point.x() + self.end_point.x()) // 2, (self.start_point.y() + self.end_point.y()) // 2)
-        size = (abs(self.start_point.x() - self.end_point.x()) // 2, abs(self.start_point.y() - self.end_point.y()) // 2)
+        if self.start_point and self.end_point:
+            center = (
+                (self.start_point.x() + self.end_point.x()) // 2, (self.start_point.y() + self.end_point.y()) // 2)
+            size = (
+                abs(self.start_point.x() - self.end_point.x()) // 2,
+                abs(self.start_point.y() - self.end_point.y()) // 2)
 
-        self.ellipse_center = center
-        self.ellipse_size = size
-        self.update_video_display()
+            # Avoid zero-sized or negative-sized ellipses by enforcing a minimum size
+            # min_size = 10
+            # if size[0] < min_size:
+            #     size = (min_size, size[1])
+            # if size[1] < min_size:
+            #     size = (size[0], min_size)
+
+            self.ellipse_center = center
+            self.ellipse_size = size
+            self.update_video_display()
 
     def finalize_ellipse(self):
         if self.ellipse_center and self.ellipse_size:
-            # Update the binary mask (clear previous ellipses)
-            self.binary_mask = np.zeros(self.current_frame.shape[:2], dtype=np.uint8)
-            cv2.ellipse(self.binary_mask, self.ellipse_center, self.ellipse_size, self.ellipse_angle, 0, 360, 255, -1)
+            # Ensure the ellipse size is valid
+            if sum(self.ellipse_size) > 1:
+                # Avoid finalizing with too-small ellipses to prevent crashes
+                # min_size = 10
+                # if self.ellipse_size[0] < min_size or self.ellipse_size[1] < min_size:
+                #     print("Ellipse size too small, skipping finalization.")
+                #     return
+
+                # Update the binary mask (clear previous ellipses)
+                self.binary_mask = np.zeros(self.current_frame.shape[:2], dtype=np.uint8)
+                cv2.ellipse(
+                    self.binary_mask,
+                    (int(self.ellipse_center[0]), int(self.ellipse_center[1])),  # Center in integer form
+                    (int(self.ellipse_size[0]), int(self.ellipse_size[1])),  # Axes in integer form
+                    self.ellipse_angle,  # Angle for rotation
+                    0,  # Starting angle of the arc
+                    360,  # Ending angle of the arc
+                    255,  # White color for the mask
+                    -1  # Thickness (-1 to fill the ellipse)
+                )
+            else:
+                print("Invalid ellipse size, skipping finalization.")
 
     def adjust_ellipse_from_drag(self, pos):
         if self.dragged_point_idx is None or not self.ellipse_center or not self.ellipse_size:
@@ -275,12 +311,21 @@ class VideoEditor(QMainWindow):
         new_width = abs(unrotated_pos[0] - cx)
         new_height = abs(unrotated_pos[1] - cy)
 
+        # Ensure that the width and height remain greater than a minimum value to avoid zero or negative sizes
+        # min_size = 10  # You can set this value based on your needs
+        # if new_width < min_size:
+        #     new_width = min_size
+        # if new_height < min_size:
+        #     new_height = min_size
+
         # Update the ellipse size
         self.ellipse_size = (new_width, new_height)
         self.update_video_display()
 
     def update_rotation(self, pos):
         """ Update the rotation angle based on the mouse position. """
+        if not self.ellipse_center:
+            return
         cx, cy = self.ellipse_center
         angle = math.degrees(math.atan2(pos.y() - cy, pos.x() - cx))
         self.ellipse_angle = angle
@@ -288,6 +333,9 @@ class VideoEditor(QMainWindow):
 
     def is_point_inside_ellipse(self, point):
         """ Check if a point is inside the ellipse """
+        if not self.ellipse_center or not self.ellipse_size:
+            return False
+
         cx, cy = self.ellipse_center
         axes_x, axes_y = self.ellipse_size
 
