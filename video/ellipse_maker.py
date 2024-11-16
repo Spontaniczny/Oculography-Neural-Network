@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QPoint, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QPen
 import math
+import os
 
 class VideoEditor(QMainWindow):
     def __init__(self):
@@ -20,6 +21,7 @@ class VideoEditor(QMainWindow):
     def initialize_variables(self):
         self.setWindowTitle("Video Frame Editor with Ellipses")
         self.video_path = None
+        self.video_name = None
         self.video_cap = None
         self.current_frame = None
         self.frame_count = 0
@@ -92,6 +94,7 @@ class VideoEditor(QMainWindow):
 
     def load_video(self):
         self.video_path, _ = QFileDialog.getOpenFileName(self, "Select Video File")
+        self.video_name = os.path.splitext(os.path.basename(self.video_path))[0]
         if self.video_path:
             self.video_cap = cv2.VideoCapture(self.video_path)
             self.frame_count = int(self.video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -382,9 +385,15 @@ class VideoEditor(QMainWindow):
 
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_center is not None:
+            # Create directories if they do not exist
+            frames_dir = os.path.join(os.path.dirname(self.video_path), 'data', 'frames')
+            annotations_dir = os.path.join(os.path.dirname(self.video_path), 'data', 'annotations')
+            os.makedirs(frames_dir, exist_ok=True)
+            os.makedirs(annotations_dir, exist_ok=True)
+
             # Create the filenames for the current frame
-            frame_filename = f"{self.video_path.rsplit('.', 1)[0]}_frame_{self.current_frame_idx}.png"
-            binary_filename = f"{self.video_path.rsplit('.', 1)[0]}_frame_{self.current_frame_idx}_binary.png"
+            frame_filename = os.path.join(frames_dir, f"{self.video_name}_frame_{self.current_frame_idx}.png")
+            binary_filename = os.path.join(annotations_dir, f"{self.video_name}_frame_{self.current_frame_idx}.png")
 
             # Save the current frame with ellipses
             cv2.imwrite(frame_filename, self.current_frame)
