@@ -8,10 +8,16 @@ from PyQt5.QtCore import Qt, QPoint, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QPen
 import math
 
-
 class VideoEditor(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.initialize_variables()
+        self.setup_gui_elements()
+        self.setup_layout()
+        self.setMouseTracking(True)
+        self.video_label.setMouseTracking(True)
+
+    def initialize_variables(self):
         self.setWindowTitle("Video Frame Editor with Ellipses")
         self.video_path = None
         self.video_cap = None
@@ -33,7 +39,7 @@ class VideoEditor(QMainWindow):
         self.control_points = []  # Control points for resizing
         self.rotation_handle = None  # Rotation control handle
 
-        # GUI Elements
+    def setup_gui_elements(self):
         self.video_label = QLabel(self)
         self.slider = QSlider(Qt.Horizontal, self)
         self.slider.setMinimum(0)
@@ -56,7 +62,7 @@ class VideoEditor(QMainWindow):
 
         self.max_frames_label = QLabel(self)
 
-        # Layout
+    def setup_layout(self):
         frame_control_layout = QHBoxLayout()
         frame_control_layout.addWidget(self.frame_input)
         frame_control_layout.addWidget(self.max_frames_label)
@@ -73,9 +79,6 @@ class VideoEditor(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
-
-        self.setMouseTracking(True)
-        self.video_label.setMouseTracking(True)
 
     def load_video(self):
         self.video_path, _ = QFileDialog.getOpenFileName(self, "Select Video File")
@@ -95,8 +98,8 @@ class VideoEditor(QMainWindow):
         ret, self.current_frame = self.video_cap.read()
 
         if ret:
-            self.binary_mask = np.zeros(self.current_frame.shape[:2], dtype=np.uint8)  # Reset binary mask
-            self.ellipse_center = None  # Reset ellipse
+            # self.binary_mask = np.zeros(self.current_frame.shape[:2], dtype=np.uint8)  # Reset binary mask
+            # self.ellipse_center = None  # Reset ellipse
             self.update_video_display()
 
         # Update the current frame label
@@ -293,7 +296,7 @@ class VideoEditor(QMainWindow):
                     self.ellipse_angle,  # Angle for rotation
                     0,  # Starting angle of the arc
                     360,  # Ending angle of the arc
-                    255,  # White color for the mask
+                    [255, 255, 255],  # White color for the mask
                     -1  # Thickness (-1 to fill the ellipse)
                 )
             else:
@@ -339,6 +342,10 @@ class VideoEditor(QMainWindow):
         cx, cy = self.ellipse_center
         axes_x, axes_y = self.ellipse_size
 
+        # Avoid division by zero, always enable moving the ellipse
+        if not axes_x or not axes_y:
+            return True
+
         # Calculate the point's position relative to the ellipse's center and apply the rotation
         rel_x, rel_y = self.rotate_point((point.x(), point.y()), (cx, cy), -self.ellipse_angle)
         rel_x, rel_y = rel_x - cx, rel_y - cy
@@ -349,6 +356,7 @@ class VideoEditor(QMainWindow):
     def delete_ellipse(self):
         self.ellipse_center = None
         self.ellipse_size = None
+        self.ellipse_angle = 0
         self.control_points = []
         self.rotation_handle = None
         self.binary_mask = np.zeros(self.current_frame.shape[:2], dtype=np.uint8)
