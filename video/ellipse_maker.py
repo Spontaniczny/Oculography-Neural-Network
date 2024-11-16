@@ -1,3 +1,4 @@
+import csv
 import sys
 import cv2
 import numpy as np
@@ -386,8 +387,9 @@ class VideoEditor(QMainWindow):
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_center is not None:
             # Create directories if they do not exist
-            frames_dir = os.path.join(os.path.dirname(self.video_path), 'data', 'frames')
-            annotations_dir = os.path.join(os.path.dirname(self.video_path), 'data', 'annotations')
+            data_dir = os.path.join(os.path.dirname(self.video_path), 'data')
+            frames_dir = os.path.join(data_dir, 'frames')
+            annotations_dir = os.path.join(data_dir, 'annotations')
             os.makedirs(frames_dir, exist_ok=True)
             os.makedirs(annotations_dir, exist_ok=True)
 
@@ -401,7 +403,37 @@ class VideoEditor(QMainWindow):
             # Save the binary mask
             cv2.imwrite(binary_filename, self.binary_mask)
 
+            self.save_to_csv(data_dir)
+
             print(f"Saved {frame_filename} and {binary_filename}")
+
+    def save_to_csv(self, data_dir):
+        csv_filename = os.path.join(data_dir, 'ellipse_info.csv')
+        rows = []
+        new_entry = [
+            f"{self.video_name}_frame_{self.current_frame_idx}",
+            self.ellipse_center[0],
+            self.ellipse_center[1],
+            self.ellipse_size[0],
+            self.ellipse_size[1],
+            self.ellipse_angle
+        ]
+
+        # Read existing entries
+        if os.path.exists(csv_filename):
+            with open(csv_filename, mode='r', newline='') as file:
+                reader = csv.reader(file)
+                for row in reader:
+                    if row[0] != new_entry[0]:
+                        rows.append(row)
+
+        # Add the new entry
+        rows.append(new_entry)
+
+        # Write the updated entries back to the CSV file
+        with open(csv_filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(rows)
 
     def go_to_frame(self):
         frame_num = int(self.frame_input.text())
