@@ -62,11 +62,21 @@ class VideoEditor(QMainWindow):
 
         self.max_frames_label = QLabel(self)
 
+        self.prev_frame_button = QPushButton("<", self)
+        self.prev_frame_button.setFixedWidth(30)
+        self.prev_frame_button.clicked.connect(self.prev_frame)
+
+        self.next_frame_button = QPushButton(">", self)
+        self.next_frame_button.setFixedWidth(30)
+        self.next_frame_button.clicked.connect(self.next_frame)
+
     def setup_layout(self):
         frame_control_layout = QHBoxLayout()
+        frame_control_layout.addWidget(self.prev_frame_button)
         frame_control_layout.addWidget(self.frame_input)
         frame_control_layout.addWidget(self.max_frames_label)
         frame_control_layout.addWidget(self.frame_label)
+        frame_control_layout.addWidget(self.next_frame_button)
 
         layout = QVBoxLayout()
         layout.addWidget(self.video_label)
@@ -88,6 +98,14 @@ class VideoEditor(QMainWindow):
             self.slider.setMaximum(self.frame_count - 1)
             self.max_frames_label.setText(f"/ {self.frame_count} frames")
             self.change_frame(0)
+
+    def prev_frame(self):
+        if self.current_frame_idx > 0:
+            self.slider.setValue(self.current_frame_idx - 1)
+
+    def next_frame(self):
+        if self.current_frame_idx < self.frame_count - 1:
+            self.slider.setValue(self.current_frame_idx + 1)
 
     def change_frame(self, frame_idx):
         if not self.video_cap:
