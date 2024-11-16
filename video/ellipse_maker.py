@@ -419,6 +419,9 @@ class VideoEditor(QMainWindow):
             self.ellipse_angle
         ]
 
+        if not os.path.exists(csv_filename):
+            rows.append(["frame_name", "center_x", "center_y", "size_x", "size_y", "angle"])
+
         # Read existing entries
         if os.path.exists(csv_filename):
             with open(csv_filename, mode='r', newline='') as file:
