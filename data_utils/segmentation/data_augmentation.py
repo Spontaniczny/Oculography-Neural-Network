@@ -2,7 +2,7 @@ from random import randrange, uniform
 from scipy.stats import halfcauchy
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
-from .segmentaion_dataset import SegmentationDataset
+from .segmentation_dataset import SegmentationDataset
 from abc import ABC, abstractmethod
 import torch
 from torchvision.io import decode_image
@@ -87,7 +87,7 @@ class AugmentedDataset(Dataset):
         self.input_size = base_dataset.input_image_size
         self.transforms = [
             HorizontalFlip(),
-            # ResizedCrop()
+            ResizedCrop()
         ]
 
         self.count_transforms = len(self.transforms)
