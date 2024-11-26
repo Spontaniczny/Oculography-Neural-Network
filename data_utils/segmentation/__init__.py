@@ -1,2 +1,2 @@
-from .segmentaion_dataset import prepare_segmentation_dataset_and_net, SegmentationDataset
+from .segmentation_dataset import prepare_segmentation_dataset, SegmentationDataset
 from .data_augmentation import AugmentedDataset
