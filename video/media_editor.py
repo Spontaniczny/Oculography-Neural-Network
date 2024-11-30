@@ -23,15 +23,20 @@ class MediaEditor(MediaEditorGUI):
         self.setMouseTracking(True)
         self.video_label.setMouseTracking(True)
 
+        # Drawing mode: 'ellipse' or 'points'
+        self.drawing_mode = 'ellipse'
+
     def connect_signals(self):
         self.slider.valueChanged.connect(self.change_frame)
         self.frame_input.returnPressed.connect(self.go_to_frame)
         self.save_button.clicked.connect(self.save_frame)
         self.load_video_button.clicked.connect(self.load_video)
         self.load_images_button.clicked.connect(self.load_images)
-        self.delete_button.clicked.connect(self.delete_ellipse)
+        self.delete_button.clicked.connect(self.delete_ellipse_or_points)
         self.prev_frame_button.clicked.connect(self.prev_frame)
         self.next_frame_button.clicked.connect(self.next_frame)
+        self.draw_ellipse_radio.toggled.connect(self.change_drawing_mode)
+        self.fit_ellipse_button.clicked.connect(self.fit_ellipse)
 
     def load_video(self):
         video_path, _ = QFileDialog.getOpenFileName(
@@ -41,7 +46,6 @@ class MediaEditor(MediaEditorGUI):
             self.media_player = VideoPlayer()
             self.media_player.load_video(video_path)
             self.setup_media()
-
 
     def load_images(self):
         image_dir = QFileDialog.getExistingDirectory(self, "Select Image Directory")
@@ -75,11 +79,11 @@ class MediaEditor(MediaEditorGUI):
     def update_video_display(self):
         if self.current_frame is None:
             return
-        pixmap = self.ellipse_manager.get_pixmap(self.current_frame)
+        pixmap = self.ellipse_manager.get_pixmap(self.current_frame, self.drawing_mode)
         self.video_label.setPixmap(pixmap)
 
-    def delete_ellipse(self):
-        self.ellipse_manager.delete_ellipse()
+    def delete_ellipse_or_points(self):
+        self.ellipse_manager.delete_ellipse_or_points()
         self.update_video_display()
 
     def save_frame(self):
@@ -101,15 +105,29 @@ class MediaEditor(MediaEditorGUI):
             self.slider.setValue(frame_num)
             self.change_frame(frame_num)
 
+    def change_drawing_mode(self):
+        if self.draw_ellipse_radio.isChecked():
+            self.drawing_mode = 'ellipse'
+            self.fit_ellipse_button.setEnabled(False)
+        else:
+            self.drawing_mode = 'points'
+            self.fit_ellipse_button.setEnabled(True)
+            self.ellipse_manager.reset()
+        self.update_video_display()
+
+    def fit_ellipse(self):
+        self.ellipse_manager.fit_ellipse_to_points()
+        self.update_video_display()
+
     # Mouse events need to be forwarded to ellipse manager
     def mousePressEvent(self, event):
-        self.ellipse_manager.mousePressEvent(event, self.video_label.pos())
+        self.ellipse_manager.mousePressEvent(event, self.video_label.pos(), self.drawing_mode)
         self.update_video_display()
 
     def mouseMoveEvent(self, event):
-        self.ellipse_manager.mouseMoveEvent(event, self.video_label.pos())
+        self.ellipse_manager.mouseMoveEvent(event, self.video_label.pos(), self.drawing_mode)
         self.update_video_display()
 
     def mouseReleaseEvent(self, event):
-        self.ellipse_manager.mouseReleaseEvent(event)
+        self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
         self.update_video_display()

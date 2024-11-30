@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout
+    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup
 )
 from PyQt5.QtCore import Qt
 
@@ -18,12 +18,23 @@ class MediaEditorGUI(QMainWindow):
         self.save_button = QPushButton("Save Frame", self)
         self.load_video_button = QPushButton("Load Video", self)
         self.load_images_button = QPushButton("Load Images", self)
-        self.delete_button = QPushButton("Delete Ellipse", self)
+        self.delete_button = QPushButton("Delete Ellipse/Points", self)
         self.max_frames_label = QLabel(self)
         self.prev_frame_button = QPushButton("<", self)
         self.next_frame_button = QPushButton(">", self)
         self.prev_frame_button.setFixedWidth(30)
         self.next_frame_button.setFixedWidth(30)
+
+        # Drawing mode selection
+        self.draw_ellipse_radio = QRadioButton("Draw Ellipse")
+        self.draw_points_radio = QRadioButton("Draw Points")
+        self.draw_ellipse_radio.setChecked(True)  # Default mode
+        self.mode_button_group = QButtonGroup()
+        self.mode_button_group.addButton(self.draw_ellipse_radio)
+        self.mode_button_group.addButton(self.draw_points_radio)
+
+        self.fit_ellipse_button = QPushButton("Fit Ellipse")
+        self.fit_ellipse_button.setEnabled(False)  # Disabled by default
 
     def setup_layout(self):
         frame_control_layout = QHBoxLayout()
@@ -37,11 +48,17 @@ class MediaEditorGUI(QMainWindow):
         load_buttons_layout.addWidget(self.load_video_button)
         load_buttons_layout.addWidget(self.load_images_button)
 
+        drawing_mode_layout = QHBoxLayout()
+        drawing_mode_layout.addWidget(self.draw_ellipse_radio)
+        drawing_mode_layout.addWidget(self.draw_points_radio)
+        drawing_mode_layout.addWidget(self.fit_ellipse_button)
+
         layout = QVBoxLayout()
         layout.addWidget(self.video_label)
         layout.addWidget(self.slider)
         layout.addLayout(frame_control_layout)
         layout.addLayout(load_buttons_layout)
+        layout.addLayout(drawing_mode_layout)
         layout.addWidget(self.save_button)
         layout.addWidget(self.delete_button)
 
