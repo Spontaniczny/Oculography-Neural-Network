@@ -6,22 +6,22 @@ class DataManager:
     def __init__(self):
         pass
 
-    def save_frame(self, video_name, frame_idx, current_frame, binary_mask, ellipse_info, data_dir):
+    def save_frame(self, media_name, frame_idx, current_frame, binary_mask, ellipse_info, data_dir):
         frames_dir = os.path.join(data_dir, 'frames')
         annotations_dir = os.path.join(data_dir, 'annotations')
         os.makedirs(frames_dir, exist_ok=True)
         os.makedirs(annotations_dir, exist_ok=True)
-        frame_filename = os.path.join(frames_dir, f"{video_name}_frame_{frame_idx}.png")
-        binary_filename = os.path.join(annotations_dir, f"{video_name}_frame_{frame_idx}.png")
+        frame_filename = os.path.join(frames_dir, f"{media_name}_frame_{frame_idx}.png")
+        binary_filename = os.path.join(annotations_dir, f"{media_name}_frame_{frame_idx}.png")
         cv2.imwrite(frame_filename, current_frame)
         cv2.imwrite(binary_filename, binary_mask)
-        self.save_to_csv(video_name, frame_idx, ellipse_info, data_dir)
+        self.save_to_csv(media_name, frame_idx, ellipse_info, data_dir)
 
-    def save_to_csv(self, video_name, frame_idx, ellipse_info, data_dir):
+    def save_to_csv(self, media_name, frame_idx, ellipse_info, data_dir):
         csv_filename = os.path.join(data_dir, 'ellipse_info.csv')
         rows = []
         new_entry = [
-            f"{video_name}_frame_{frame_idx}",
+            f"{media_name}_frame_{frame_idx}",
             ellipse_info['center_x'],
             ellipse_info['center_y'],
             ellipse_info['size_x'],

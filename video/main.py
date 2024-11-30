@@ -1,10 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from video_editor import VideoEditor
+from media_editor import MediaEditor
 
 def main():
     app = QApplication(sys.argv)
-    window = VideoEditor()
+    window = MediaEditor()
     window.show()
     sys.exit(app.exec_())
 
