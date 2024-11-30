@@ -29,8 +29,9 @@ class EllipseManager:
         self.binary_mask = None
         self.control_points = []
         self.rotation_handle = None
+        self.drawing_points = []  # Points collected when in 'Draw Points' mode
 
-    def delete_ellipse(self):
+    def delete_ellipse_or_points(self):
         self.reset()
 
     def has_ellipse(self):
@@ -45,29 +46,52 @@ class EllipseManager:
             'angle': self.ellipse_angle
         }
 
-    def get_pixmap(self, frame):
+    def get_pixmap(self, frame, drawing_mode):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, _ = frame_rgb.shape
         qimage = QImage(frame_rgb.data, width, height, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qimage)
         painter = QPainter(pixmap)
         painter.setOpacity(0.5)
-        if self.ellipse_center and self.ellipse_size:
-            if sum(self.ellipse_size) > 1:
-                painter.setBrush(QColor(255, 255, 255, 20))
-                painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
-                rect = QRectF(
-                    int(self.ellipse_center[0] - self.ellipse_size[0]),
-                    int(self.ellipse_center[1] - self.ellipse_size[1]),
-                    int(2 * self.ellipse_size[0]), int(2 * self.ellipse_size[1])
-                )
-                painter.save()
-                painter.translate(int(self.ellipse_center[0]), int(self.ellipse_center[1]))
-                painter.rotate(self.ellipse_angle)
-                painter.translate(-int(self.ellipse_center[0]), -int(self.ellipse_center[1]))
-                painter.drawEllipse(rect)
-                painter.restore()
-                self.draw_control_points(painter)
+        if drawing_mode == 'ellipse':
+            if self.ellipse_center and self.ellipse_size:
+                if sum(self.ellipse_size) > 1:
+                    painter.setBrush(QColor(255, 255, 255, 127))
+                    painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
+                    rect = QRectF(
+                        int(self.ellipse_center[0] - self.ellipse_size[0]),
+                        int(self.ellipse_center[1] - self.ellipse_size[1]),
+                        int(2 * self.ellipse_size[0]), int(2 * self.ellipse_size[1])
+                    )
+                    painter.save()
+                    painter.translate(int(self.ellipse_center[0]), int(self.ellipse_center[1]))
+                    painter.rotate(self.ellipse_angle)
+                    painter.translate(-int(self.ellipse_center[0]), -int(self.ellipse_center[1]))
+                    painter.drawEllipse(rect)
+                    painter.restore()
+                    self.draw_control_points(painter)
+        elif drawing_mode == 'points':
+            # Draw points
+            painter.setBrush(QColor(255, 0, 0, 255))
+            painter.setPen(QPen(QColor(255, 0, 0, 255), 2))
+            for point in self.drawing_points:
+                painter.drawEllipse(QPoint(int(point[0]), int(point[1])), 3, 3)
+            # Draw fitted ellipse if available
+            if self.ellipse_center and self.ellipse_size:
+                if sum(self.ellipse_size) > 1:
+                    painter.setBrush(Qt.NoBrush)
+                    painter.setPen(QPen(QColor(0, 255, 0, 255), 2))
+                    rect = QRectF(
+                        int(self.ellipse_center[0] - self.ellipse_size[0]),
+                        int(self.ellipse_center[1] - self.ellipse_size[1]),
+                        int(2 * self.ellipse_size[0]), int(2 * self.ellipse_size[1])
+                    )
+                    painter.save()
+                    painter.translate(int(self.ellipse_center[0]), int(self.ellipse_center[1]))
+                    painter.rotate(self.ellipse_angle)
+                    painter.translate(-int(self.ellipse_center[0]), -int(self.ellipse_center[1]))
+                    painter.drawEllipse(rect)
+                    painter.restore()
         painter.end()
         return pixmap
 
@@ -106,59 +130,69 @@ class EllipseManager:
     def inverse_rotate_point(self, point, center, angle):
         return self.rotate_point(point, center, -angle)
 
-    def mousePressEvent(self, event, label_pos):
+    def mousePressEvent(self, event, label_pos, drawing_mode):
         pos = event.pos() - label_pos
-        if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(pos.y() - self.rotation_handle[1]) < 10:
-            self.is_rotating = True
-            self.start_point = pos
-            self.initial_angle = math.degrees(math.atan2(self.start_point.y() - self.ellipse_center[1],
-                                                         self.start_point.x() - self.ellipse_center[0]))
-            return
-        for idx, point in enumerate(self.control_points):
-            if abs(pos.x() - point[0]) < 10 and abs(pos.y() - point[1]) < 10:
-                self.is_dragging_point = True
-                self.dragged_point_idx = idx
+        if drawing_mode == 'ellipse':
+            if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(pos.y() - self.rotation_handle[1]) < 10:
+                self.is_rotating = True
+                self.start_point = pos
+                self.initial_angle = math.degrees(math.atan2(self.start_point.y() - self.ellipse_center[1],
+                                                             self.start_point.x() - self.ellipse_center[0]))
                 return
-        if self.ellipse_center and self.is_point_inside_ellipse(pos):
-            self.is_dragging_ellipse = True
-            self.start_point = pos
-        elif event.button() == Qt.LeftButton:
-            self.start_point = pos
-            self.is_drawing = True
+            for idx, point in enumerate(self.control_points):
+                if abs(pos.x() - point[0]) < 10 and abs(pos.y() - point[1]) < 10:
+                    self.is_dragging_point = True
+                    self.dragged_point_idx = idx
+                    return
+            if self.ellipse_center and self.is_point_inside_ellipse(pos):
+                self.is_dragging_ellipse = True
+                self.start_point = pos
+            elif event.button() == Qt.LeftButton:
+                self.start_point = pos
+                self.is_drawing = True
+        elif drawing_mode == 'points':
+            if event.button() == Qt.LeftButton:
+                self.drawing_points.append((pos.x(), pos.y()))
 
-    def mouseMoveEvent(self, event, label_pos):
+    def mouseMoveEvent(self, event, label_pos, drawing_mode):
         pos = event.pos() - label_pos
-        if self.is_drawing:
-            self.end_point = pos
-            self.update_drawing_ellipse()
-        elif self.is_dragging_point:
-            self.adjust_ellipse_from_drag(pos)
-        elif self.is_rotating:
-            current_angle = math.degrees(math.atan2(pos.y() - self.ellipse_center[1],
-                                                    pos.x() - self.ellipse_center[0]))
-            angle_difference = current_angle - self.initial_angle
-            self.ellipse_angle += angle_difference
-            self.initial_angle = current_angle
-        elif self.is_dragging_ellipse:
-            delta_x = pos.x() - self.start_point.x()
-            delta_y = pos.y() - self.start_point.y()
-            self.ellipse_center = (self.ellipse_center[0] + delta_x, self.ellipse_center[1] + delta_y)
-            self.start_point = pos
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if drawing_mode == 'ellipse':
             if self.is_drawing:
-                self.is_drawing = False
-                self.finalize_ellipse()
+                self.end_point = pos
+                self.update_drawing_ellipse()
             elif self.is_dragging_point:
-                self.is_dragging_point = False
-                self.finalize_ellipse()
+                self.adjust_ellipse_from_drag(pos)
             elif self.is_rotating:
-                self.is_rotating = False
-                self.finalize_ellipse()
+                current_angle = math.degrees(math.atan2(pos.y() - self.ellipse_center[1],
+                                                        pos.x() - self.ellipse_center[0]))
+                angle_difference = current_angle - self.initial_angle
+                self.ellipse_angle += angle_difference
+                self.initial_angle = current_angle
             elif self.is_dragging_ellipse:
-                self.is_dragging_ellipse = False
-                self.finalize_ellipse()
+                delta_x = pos.x() - self.start_point.x()
+                delta_y = pos.y() - self.start_point.y()
+                self.ellipse_center = (self.ellipse_center[0] + delta_x, self.ellipse_center[1] + delta_y)
+                self.start_point = pos
+        elif drawing_mode == 'points':
+            pass  # No dragging in points mode
+
+    def mouseReleaseEvent(self, event, drawing_mode):
+        if drawing_mode == 'ellipse':
+            if event.button() == Qt.LeftButton:
+                if self.is_drawing:
+                    self.is_drawing = False
+                    self.finalize_ellipse()
+                elif self.is_dragging_point:
+                    self.is_dragging_point = False
+                    self.finalize_ellipse()
+                elif self.is_rotating:
+                    self.is_rotating = False
+                    self.finalize_ellipse()
+                elif self.is_dragging_ellipse:
+                    self.is_dragging_ellipse = False
+                    self.finalize_ellipse()
+        elif drawing_mode == 'points':
+            pass  # No action needed on mouse release in points mode
 
     def update_drawing_ellipse(self):
         if self.start_point and self.end_point:
@@ -206,4 +240,28 @@ class EllipseManager:
         rel_x, rel_y = rel_x - cx, rel_y - cy
         return (rel_x ** 2) / (axes_x ** 2) + (rel_y ** 2) / (axes_y ** 2) <= 1
 
-
+    def fit_ellipse_to_points(self):
+        if len(self.drawing_points) < 5:
+            print("At least 5 points are required to fit an ellipse.")
+            return
+        # Prepare data for cv2.fitEllipse
+        points_array = np.array(self.drawing_points, dtype=np.int32)
+        if len(points_array.shape) == 2:
+            points_array = points_array.reshape(-1, 1, 2)
+        ellipse = cv2.fitEllipse(points_array)
+        (x, y), (MA, ma), angle = ellipse
+        self.ellipse_center = (x, y)
+        self.ellipse_size = (MA / 2, ma / 2)  # OpenCV returns full lengths, we need radii
+        self.ellipse_angle = angle
+        # Create binary mask
+        self.binary_mask = np.zeros((self.frame_height, self.frame_width), dtype=np.uint8)
+        cv2.ellipse(
+            self.binary_mask,
+            (int(self.ellipse_center[0]), int(self.ellipse_center[1])),
+            (int(self.ellipse_size[0]), int(self.ellipse_size[1])),
+            self.ellipse_angle,
+            0,
+            360,
+            [255, 255, 255],
+            -1
+        )
