@@ -54,7 +54,7 @@ class EllipseManager:
         painter.setOpacity(0.5)
         if self.ellipse_center and self.ellipse_size:
             if sum(self.ellipse_size) > 1:
-                painter.setBrush(QColor(255, 255, 255, 127))
+                painter.setBrush(QColor(255, 255, 255, 20))
                 painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
                 rect = QRectF(
                     int(self.ellipse_center[0] - self.ellipse_size[0]),

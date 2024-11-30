@@ -1,0 +1,50 @@
+from PyQt5.QtWidgets import (
+    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout
+)
+from PyQt5.QtCore import Qt
+
+class MediaEditorGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initialize_variables()
+        self.setup_layout()
+
+    def initialize_variables(self):
+        self.setWindowTitle("Media Frame Editor with Ellipses")
+        self.video_label = QLabel(self)
+        self.slider = QSlider(Qt.Horizontal, self)
+        self.frame_input = QLineEdit(self)
+        self.frame_label = QLabel(self)
+        self.save_button = QPushButton("Save Frame", self)
+        self.load_video_button = QPushButton("Load Video", self)
+        self.load_images_button = QPushButton("Load Images", self)
+        self.delete_button = QPushButton("Delete Ellipse", self)
+        self.max_frames_label = QLabel(self)
+        self.prev_frame_button = QPushButton("<", self)
+        self.next_frame_button = QPushButton(">", self)
+        self.prev_frame_button.setFixedWidth(30)
+        self.next_frame_button.setFixedWidth(30)
+
+    def setup_layout(self):
+        frame_control_layout = QHBoxLayout()
+        frame_control_layout.addWidget(self.prev_frame_button)
+        frame_control_layout.addWidget(self.frame_input)
+        frame_control_layout.addWidget(self.max_frames_label)
+        frame_control_layout.addWidget(self.frame_label)
+        frame_control_layout.addWidget(self.next_frame_button)
+
+        load_buttons_layout = QHBoxLayout()
+        load_buttons_layout.addWidget(self.load_video_button)
+        load_buttons_layout.addWidget(self.load_images_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.video_label)
+        layout.addWidget(self.slider)
+        layout.addLayout(frame_control_layout)
+        layout.addLayout(load_buttons_layout)
+        layout.addWidget(self.save_button)
+        layout.addWidget(self.delete_button)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
