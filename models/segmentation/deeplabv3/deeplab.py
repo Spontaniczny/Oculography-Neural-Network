@@ -89,3 +89,10 @@ class DeepLab(nn.Module):
         x = self.final(x)
         return F.interpolate(x, size=(heigth, width), mode="bilinear", align_corners=False)
     
+    def predict_proba(self, x: torch.Tensor) -> torch.Tensor:
+        return F.sigmoid(self(x))
+
+    def predict_binary(self, x: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
+        return self.predict_proba(x) > threshold
+    
+    
