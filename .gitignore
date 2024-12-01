@@ -1,3 +1,11 @@
 .idea
-datasets
+.vscode
+datasets/*
 .venv
+*saved_models
+*__pycache__
+.DS_Store
+!*.gitkeep
+*.egg-info
+NN_human_mouse_eyes
+data_dump/
