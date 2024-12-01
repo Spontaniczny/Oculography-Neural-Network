@@ -1,15 +1,14 @@
 import torch
-from torch import optim
 import torch.nn as nn
 from copy import deepcopy
 from typing import Callable
 from losses.segmentation.losses import DSCLoss, IoULoss
-import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
-from data_utils.segmentation import prepare_segmentation_dataset, SegmentationDataset
-from torch.utils.data import DataLoader, Dataset, random_split
-import torch
 from models.segmentation.deeplabv3 import DeepLab
+from data_utils.segmentation import prepare_segmentation_dataset
+from torch.utils.data import DataLoader, Dataset, random_split
+from .argparser import parse_arguments
+
 
 
 def choose_device():
@@ -18,8 +17,6 @@ def choose_device():
     if torch.backends.mps.is_available():
         return "mps"
     return "cpu"
-
-
 
 
 def prepare_dataloaders(
@@ -62,20 +59,6 @@ def validate_model(
     return average_loss
 
 
-def plot_training_stats(train_loss: list[float], val_loss: list[float]):
-    epochs = len(train_loss)
-    plt.xticks(range(epochs))
-
-    plt.plot(train_loss, color='red', label="Training loss")
-    plt.plot(val_loss, color='blue', label="Validation loss")
-
-    plt.xlabel("Epoch number")
-    plt.ylabel("Average batch loss")
-
-    plt.legend()
-    plt.show()
-
-
 def train(
     model: nn.Module,
     train_loader: DataLoader,
@@ -88,7 +71,7 @@ def train(
     
     model.to(device)
 
-    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     criterion = DSCLoss()
 
     best_model, best_loss = model, float("inf")
@@ -137,14 +120,28 @@ def train(
                 print("Early stopping")
                 break
 
-    plot_training_stats(train_losses, val_losses)
     return best_model
 
 
-if __name__ == "__main__":
-    ds = prepare_segmentation_dataset("datasets/ratEye/01", input_size=128)
-    train_loader, val_loader, test_loader = prepare_dataloaders(ds, [0.6, 0.2, 0.2], batch_size=16)
+def main():
+    args = parse_arguments()
+
+    ds = prepare_segmentation_dataset(args.dataset, input_size=args.input_size)
+    train_loader, val_loader, test_loader = prepare_dataloaders(
+        ds, [0.6, 0.2, 0.2], batch_size=args.batch_size
+    )
 
     device = choose_device()
-    net = DeepLab()
-    net = train(net, train_loader, val_loader, 200, patience=25, device=device)
+    net = DeepLab(backbone=args.backbone)
+
+    net = train(
+        model=net, 
+        train_loader=train_loader, 
+        val_loader=val_loader, 
+        patience=args.patience, 
+        device=device
+    )
+
+if __name__ == "__main__":
+    main()
+    
