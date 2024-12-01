@@ -10,7 +10,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 jupyter = "^1.1.1"
 numpy = "^2.1.2"
 pandas = "^2.2.3"
@@ -19,6 +19,11 @@ matplotlib = "^3.9.2"
 torch = "^2.5.0"
 torchvision = "^0.20.0"
 torchviz = "^0.0.2"
+torchview = "^0.2.6"
+opencv-python = "^4.10.0.84"
+scikit-image = "^0.24.0"
+onnx = "^1.17.0"
+onnxscript = "^0.1.0.dev20241201"
 
 
 [build-system]
