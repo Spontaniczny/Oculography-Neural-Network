@@ -84,7 +84,7 @@ class AugmentedDataset(Dataset):
         super().__init__()
         
         self.base_dataset = base_dataset
-        self.input_size = base_dataset.input_image_size
+        self.input_size = base_dataset.net_input_size
         self.transforms = [
             HorizontalFlip(),
             ResizedCrop()

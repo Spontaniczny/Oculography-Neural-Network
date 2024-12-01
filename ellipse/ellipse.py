@@ -92,6 +92,9 @@ def fit_ellipse(
     else:
         edge_points = find_outline(mask)
     
+    if len(edge_points) == 0:
+        return Ellipse(mask.shape[0] / 2, mask.shape[1] / 2, 1, 1, 0, mask.shape)
+    
     (x_center, y_center), (major_axis, minor_axis), angle = cv2.fitEllipse(edge_points)
     ellipse = Ellipse(x_center, y_center, major_axis, minor_axis, angle, mask.shape)
     return ellipse
