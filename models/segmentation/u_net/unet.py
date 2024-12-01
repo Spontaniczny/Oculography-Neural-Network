@@ -42,13 +42,13 @@ class U_NET(nn.Module):
         
         self.final_convolution = nn.Conv2d(start_dim_channel_dim, 1, (1, 1))
         
-        self.batch_norm2d = nn.BatchNorm2d(1)
+        # self.batch_norm2d = nn.BatchNorm2d(1)
     
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         # Downsampling path
-        x = self.batch_norm2d(x)
+        # x = self.batch_norm2d(x)
 
         residual_blocks = []
         for conv_block in self.downsample[:-1]:

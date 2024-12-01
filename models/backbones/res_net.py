@@ -1,5 +1,6 @@
 import torch.nn as nn
 from dataclasses import dataclass
+from .backbone import Backbone
 
 @dataclass(frozen=True)
 class BlockDescr:
@@ -20,7 +21,6 @@ class ResNetBlock(nn.Module):
         ):
 
         super().__init__()
-
         self.relu = nn.ReLU(inplace=True)
 
         if params.use_downsampling:
@@ -93,8 +93,10 @@ class ResNetBlock(nn.Module):
         return x
 
 
-class ResNet(nn.Sequential):
-    def __init__(self, block_params: list[BlockDescr]):
+class ResNet(nn.Sequential, Backbone):
+    def __init__(self, block_params: list[BlockDescr], output_channels: int):
+
+        self.output_channels = output_channels
 
         first = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False),
@@ -117,6 +119,10 @@ class ResNet(nn.Sequential):
         return x
     
 
+    def output_channels(self):
+        return self.output_channels
+    
+
 def create_res_net_50() -> ResNet:
 
     blocks = [
@@ -126,8 +132,19 @@ def create_res_net_50() -> ResNet:
         BlockDescr(1024, 512, 2048, 2, 1, 2, 4)
     ]
 
-    res_net50 = ResNet(blocks)
+    res_net50 = ResNet(blocks, output_channels=2048)
     return res_net50
+
+
+def create_res_net_34() -> ResNet:
+    blocks = [
+        BlockDescr(64, 64, 64, 2, 1, use_downsampling=False),
+        BlockDescr(64, 128, 128, 3, 2),
+        BlockDescr(128, 256, 256, 5, 2),
+        BlockDescr(256, 512, 512, 2, 1),
+    ]
+    res_net34 = ResNet(blocks, output_channels=512)
+    return res_net34
 
 
 def create_res_net_18() -> ResNet:
@@ -138,16 +155,6 @@ def create_res_net_18() -> ResNet:
         BlockDescr(256, 512, 512, 1, 1),
     ]
 
-    res_net18 = ResNet(blocks)
+    res_net18 = ResNet(blocks, output_channels=512)
     return res_net18
 
-
-def create_res_net_34() -> ResNet:
-    blocks = [
-        BlockDescr(64, 64, 64, 2, 1, use_downsampling=False),
-        BlockDescr(64, 128, 128, 3, 2),
-        BlockDescr(128, 256, 256, 5, 2),
-        BlockDescr(256, 512, 512, 2, 1),
-    ]
-    res_net34 = ResNet(blocks)
-    return res_net34
