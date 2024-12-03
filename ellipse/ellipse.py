@@ -3,7 +3,7 @@ from typing import Optional
 import cv2
 import numpy as np
 import torch
-from skimage.morphology import ellipse, opening, closing
+from skimage.morphology import ellipse as create_ellipse
 from skimage.feature import canny
 
 
@@ -17,6 +17,18 @@ class Ellipse:
     original_img_shape: tuple[int, int]
 
 
+    def get_parameters(self) -> tuple[float, float, float, float, float]:
+        return self.x_center, self.y_center, self.major_axis, self.minor_axis, self.rotate_angle
+
+    def normalize_parameters(self) -> tuple[float, float, float, float, float]:
+        h, w = self.original_img_shape
+        x_norm = self.x_center / h
+        y_norm = self.y_center / w
+        major_norm = self.major_axis / h
+        minor_norm = self.minor_axis / w
+        angle_norm =  torch.pi * ((self.rotate_angle - 180) / 360)
+        return x_norm, y_norm, major_norm, minor_norm, angle_norm
+
     def draw_ellipse_on_image(
             self, 
             mask: np.ndarray, 
@@ -29,8 +41,8 @@ class Ellipse:
         cv2.ellipse(
             mask, 
             (int(self.y_center), int(self.x_center)), 
-            (int(self.major_axis / 2), int(self.minor_axis / 2)), 
-            self.rotate_angle, 0, 360, 2, 1
+            (int(self.major_axis), int(self.minor_axis)), 
+            -self.rotate_angle, 0, 360, 2, 1
         )
         
         return mask
@@ -44,8 +56,8 @@ class Ellipse:
         cv2.ellipse(
             ellipse_img, 
             (int(self.y_center), int(self.x_center)),
-            (int(self.major_axis / 2), int(self.minor_axis / 2)), 
-            self.rotate_angle, 0, 360, 2, -1
+            (int(self.major_axis), int(self.minor_axis)), 
+            -self.rotate_angle, 360, 0, 2, -1
         )
 
         if target_shape is not None:
@@ -56,15 +68,16 @@ class Ellipse:
 
 def find_circle_radius(mask: np.ndarray) -> int:
     mass = np.sum(mask)
-    inner_circle_mass = mass // 2
+    inner_circle_mass = mass / 8
     radius = np.sqrt(inner_circle_mass / np.pi)
     return int(radius)
 
 def get_rid_of_noise(mask: np.ndarray) -> np.ndarray:
     radius = find_circle_radius(mask)
-    circle = ellipse(radius, radius)
-    closed_img = closing(mask, circle) # need to be done first on mask
-    opened_img = opening(closed_img, circle)
+    circle = create_ellipse(radius, radius).astype("uint8")
+    closed_img = cv2.morphologyEx(mask.astype("uint8"), cv2.MORPH_CLOSE, circle)  # needs to be done first on mask
+    opened_img = cv2.morphologyEx(closed_img, cv2.MORPH_OPEN, circle)
+    opened_img = opened_img.astype("int32")
     return opened_img
 
 
@@ -88,22 +101,23 @@ def fit_ellipse(
         raise ValueError("Edge detection method should be one of ['convex_hull', 'canny']")
     if edge_detection == "convex_hull":
         edge_points = find_convex_hull(mask)
-
     else:
         edge_points = find_outline(mask)
     
-    if len(edge_points) == 0:
-        return Ellipse(mask.shape[0] / 2, mask.shape[1] / 2, 1, 1, 0, mask.shape)
+    if edge_points is None or len(edge_points) == 0:
+        return Ellipse(mask.shape[0] / 2, mask.shape[1] / 2, 0, 0, 0, mask.shape)
     
-    (x_center, y_center), (major_axis, minor_axis), angle = cv2.fitEllipse(edge_points)
+    (x_center, y_center), (minor_axis, major_axis), angle = cv2.fitEllipse(edge_points)
+
+    minor_axis, major_axis = minor_axis / 2, major_axis / 2
     ellipse = Ellipse(x_center, y_center, major_axis, minor_axis, angle, mask.shape)
     return ellipse
 
-def find_ellipse(mask: torch.Tensor) -> torch.Tensor:
+def find_ellipse(mask: torch.Tensor, denoise: bool = True) -> tuple[torch.Tensor, Ellipse]:
     mask = mask.squeeze().numpy()
-    denoised_mask = get_rid_of_noise(mask)
+    denoised_mask = get_rid_of_noise(mask) if denoise else mask
     ellipse = fit_ellipse(denoised_mask)
     mask = ellipse.draw_ellipse()
     tensor_ellipse = torch.Tensor(mask).unsqueeze(0)
     tensor_mask = tensor_ellipse > 0.5
-    return tensor_mask
+    return tensor_mask, ellipse
