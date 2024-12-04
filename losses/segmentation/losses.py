@@ -39,3 +39,21 @@ class IoULoss(nn.Module):
         iou = intersection.sum() / union.sum()
         loss = 1 - iou
         return loss
+    
+
+class MAE(nn.Module):
+    def __init__(
+        self,
+        logits: bool = True
+    ):  
+        
+        super().__init__()
+        self.sigmoid = nn.Sigmoid() if logits else lambda x: x
+        self.l1 = nn.L1Loss()
+
+    def forward(self, pred: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        pred = self.sigmoid(pred)
+        return self.l1(pred, labels)
+
+        
+    

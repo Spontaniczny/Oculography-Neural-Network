@@ -2,12 +2,13 @@ import torch
 import torch.nn as nn
 from copy import deepcopy
 from typing import Callable
-from losses.segmentation.losses import DSCLoss, IoULoss
+from losses.segmentation.losses import DSCLoss, IoULoss, MAE
 from torch.utils.data import DataLoader
 from models.segmentation.deeplabv3 import DeepLab
 from data_utils.segmentation import prepare_segmentation_dataset
 from torch.utils.data import DataLoader, Dataset, random_split
 from .argparser import parse_arguments
+from .helper_functions import get_loss_function
 
 
 
@@ -55,7 +56,6 @@ def validate_model(
             number_of_batches += 1
 
     average_loss = total_loss / number_of_batches
-
     return average_loss
 
 
@@ -63,16 +63,16 @@ def train(
     model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader,
-    max_epochs: int = 200,
-    patience: int = 3, # parameter for early stopping
-    learning_rate: float = 1e-3,
+    max_epochs: int = 50,
+    patience: int = 5, # parameter for early stopping
+    loss_function: str = "dice",
     device: str = "cpu"
 ):
     
     model.to(device)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    criterion = DSCLoss()
+    optimizer = torch.optim.AdamW(model.parameters())
+    criterion = get_loss_function(loss_function)
 
     best_model, best_loss = model, float("inf")
     steps_without_improvement = 0
@@ -135,10 +135,12 @@ def main():
     net = DeepLab(backbone=args.backbone)
 
     net = train(
-        model=net, 
-        train_loader=train_loader, 
-        val_loader=val_loader, 
-        patience=args.patience, 
+        model=net,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        max_epochs=args.max_epochs,
+        loss_function=args.loss_type,
+        patience=args.patience,
         device=device
     )
 
