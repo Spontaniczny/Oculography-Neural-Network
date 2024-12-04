@@ -80,16 +80,19 @@ class ResizedCrop(Transform):
 
 class AugmentedDataset(Dataset):
 
-    def __init__(self, base_dataset: SegmentationDataset) -> None:
+    def __init__(
+            self, 
+            base_dataset: SegmentationDataset,
+            input_size: int
+            
+        ) -> None:
         super().__init__()
         
         self.base_dataset = base_dataset
-        self.input_size = base_dataset.net_input_size
         self.transforms = [
             HorizontalFlip(),
             ResizedCrop()
         ]
-
         self.count_transforms = len(self.transforms)
 
 
