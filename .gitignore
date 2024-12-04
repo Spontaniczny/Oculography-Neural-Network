@@ -9,3 +9,4 @@ datasets/*
 *.egg-info
 NN_human_mouse_eyes
 data_dump/
+.env
