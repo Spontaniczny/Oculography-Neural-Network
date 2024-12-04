@@ -29,10 +29,27 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--patience",
         type=int,
-        default=20,
+        default=5,
         choices=list(range(3, 51)),
         metavar="[3-50]",
         help="Patience in early stopping"
+    )
+
+    parser.add_argument(
+        "--max_epochs",
+        type=int,
+        default=50,
+        choices=list(range(10, 201)),
+        metavar="[10-200]",
+        help="Maximum number of epochs during training"
+    )
+
+    parser.add_argument(
+        "--loss_type",
+        type=str,
+        default="dice",
+        choices=["dice", "iou", "bce"],
+        help="Loss functions used for training"
     )
 
     parser.add_argument(
