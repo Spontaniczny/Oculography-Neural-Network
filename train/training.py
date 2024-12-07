@@ -2,14 +2,19 @@ import torch
 import torch.nn as nn
 from copy import deepcopy
 from typing import Callable
-from losses.segmentation.losses import DSCLoss, IoULoss, MAE
 from torch.utils.data import DataLoader
 from models.segmentation.deeplabv3 import DeepLab
-from data_utils.segmentation import prepare_segmentation_dataset
+from data_utils import load_dataset
 from torch.utils.data import DataLoader, Dataset, random_split
-from .argparser import parse_arguments
+from .argparser import parse_arguments, neural_network_config
 from .helper_functions import get_loss_function
-
+from .evaluation import compute_loss_metrics, binary_metrics
+from .evaluation_plots import plot_precision_recall, plot_roc
+import wandb
+import wandb
+from dotenv import load_dotenv
+import os
+from PIL import Image
 
 
 def choose_device():
@@ -18,6 +23,20 @@ def choose_device():
     if torch.backends.mps.is_available():
         return "mps"
     return "cpu"
+
+
+def authenticate() -> bool:
+    if not load_dotenv():
+        raise ValueError("Could not find dotenv file")
+    
+    wandb_key = os.environ.get("key")
+    if wandb_key is None:
+        raise ValueError("No wandb key Could not authenticate")
+    
+    if not wandb.login(key=wandb_key, verify=True):
+        raise ValueError("Invalid authentication key")
+    
+    return True
 
 
 def prepare_dataloaders(
@@ -74,6 +93,8 @@ def train(
     optimizer = torch.optim.AdamW(model.parameters())
     criterion = get_loss_function(loss_function)
 
+    wandb.watch(model, criterion, log="all", log_freq=10)
+
     best_model, best_loss = model, float("inf")
     steps_without_improvement = 0
     train_losses, val_losses = [], []
@@ -100,15 +121,21 @@ def train(
             number_of_batches += 1
 
             if (i + 1) % 10 == 0:
-                print(f"Batch {i + 1}")
+                wandb.log({
+                    "batch": number_of_batches,
+                    "Current_average_loss": epoch_loss / number_of_batches
+                })
         
         train_loss = epoch_loss / number_of_batches
         train_losses.append(train_loss)
-        print(f"Train batch loss: {train_loss:.6f}")
 
         val_loss = validate_model(model, val_loader, criterion, device)
         val_losses.append(val_loss)
-        print(f"Validation average loss: {val_loss:.6f}")
+
+        wandb.log({
+            "Train average loss": train_loss,
+            "Validation average loss": val_loss
+        })
 
         if val_loss < best_loss:
             steps_without_improvement = 0
@@ -117,32 +144,60 @@ def train(
         else:
             steps_without_improvement += 1
             if steps_without_improvement > patience:
-                print("Early stopping")
-                break
+                wandb.log({
+                    "Early stopping": epoch,
+                })
 
     return best_model
 
 
 def main():
+    # ds = load_dataset("../../datasets/rat_eye/^.*$", 128)
+    # ds = prepare_segmentation_dataset(args.dataset, input_size=args.input_size)
+
     args = parse_arguments()
 
-    ds = prepare_segmentation_dataset(args.dataset, input_size=args.input_size)
-    train_loader, val_loader, test_loader = prepare_dataloaders(
-        ds, [0.6, 0.2, 0.2], batch_size=args.batch_size
-    )
+    authenticate()
+    nn_config = neural_network_config(args)
 
-    device = choose_device()
-    net = DeepLab(backbone=args.backbone)
+    with wandb.init(project="first_experiment", config=nn_config) as run:
 
-    net = train(
-        model=net,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        max_epochs=args.max_epochs,
-        loss_function=args.loss_type,
-        patience=args.patience,
-        device=device
-    )
+        ds = load_dataset(args.dataset, input_size=args.input_size)
+        train_loader, val_loader, test_loader = prepare_dataloaders(
+            ds, [0.6, 0.2, 0.2], batch_size=args.batch_size
+        )
+        device = choose_device()
+
+        print(f"Training model on device: {device}")
+        net = DeepLab(**nn_config)
+        net.to(device)
+
+        net = train(
+            model=net,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            max_epochs=args.max_epochs,
+            loss_function=args.loss_type,
+            patience=args.patience,
+            device=device
+        )
+
+        loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou"], device)
+        b_metrics = binary_metrics(net, test_loader, device)
+
+        wandb.summary["loss_metrics"] = loss_metrics
+        wandb.summary["binary_metrics"] = b_metrics
+        # wandb.summary.update()
+
+        wandb.log({
+            "prc_curve": wandb.Image(Image.open(plot_precision_recall(b_metrics))),
+            "roc_curve": wandb.Image(Image.open(plot_roc(b_metrics))),
+        })
+
+        # Saving neural network
+        torch.onnx.export(net, torch.randn(1, 1, args.input_size, args.input_size).to(device), "model.onnx")
+        wandb.save("model.onnx")
+
 
 if __name__ == "__main__":
     main()
