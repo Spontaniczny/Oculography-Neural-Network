@@ -94,9 +94,10 @@ class ResNetBlock(nn.Module):
 
 
 class ResNet(nn.Sequential, Backbone):
-    def __init__(self, block_params: list[BlockDescr], output_channels: int):
+    def __init__(self, block_params: list[BlockDescr], output_channels: int, output_stride: int):
 
-        self.output_channels = output_channels
+        self._output_channels = output_channels
+        self._output_stride = output_stride
 
         first = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False),
@@ -118,9 +119,13 @@ class ResNet(nn.Sequential, Backbone):
             x = mod(x)
         return x
     
-
+    @property
     def output_channels(self):
-        return self.output_channels
+        return self._output_channels
+    
+    @property
+    def output_stride(self):
+        return self._output_stride
     
 
 def create_res_net_50() -> ResNet:
@@ -132,7 +137,7 @@ def create_res_net_50() -> ResNet:
         BlockDescr(1024, 512, 2048, 2, 1, 2, 4)
     ]
 
-    res_net50 = ResNet(blocks, output_channels=2048)
+    res_net50 = ResNet(blocks, output_channels=2048, output_stride=8)
     return res_net50
 
 
@@ -143,7 +148,7 @@ def create_res_net_34() -> ResNet:
         BlockDescr(128, 256, 256, 5, 2),
         BlockDescr(256, 512, 512, 2, 1),
     ]
-    res_net34 = ResNet(blocks, output_channels=512)
+    res_net34 = ResNet(blocks, output_channels=512, output_stride=16)
     return res_net34
 
 
@@ -155,6 +160,6 @@ def create_res_net_18() -> ResNet:
         BlockDescr(256, 512, 512, 1, 1),
     ]
 
-    res_net18 = ResNet(blocks, output_channels=512)
+    res_net18 = ResNet(blocks, output_channels=512, output_stride=16)
     return res_net18
 

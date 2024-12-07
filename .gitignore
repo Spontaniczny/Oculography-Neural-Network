@@ -10,3 +10,5 @@ datasets/*
 NN_human_mouse_eyes
 data_dump/
 .env
+wandb
+*.onnx

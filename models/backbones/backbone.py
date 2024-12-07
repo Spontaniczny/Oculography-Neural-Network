@@ -7,3 +7,7 @@ class Backbone(ABC, nn.Module):
     @abstractmethod
     def output_channels(self):
         ...
+
+    @abstractmethod
+    def output_stride(self):
+        ...
