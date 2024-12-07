@@ -1,5 +1,11 @@
 import argparse
+from typing import Any
 
+def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
+    nn_config = {
+        "backbone": args.backbone
+    }
+    return nn_config
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -56,7 +62,7 @@ def parse_arguments() -> argparse.Namespace:
         "--batch_size",
         type=int,
         default=16,
-        choices=[16, 32, 64],
+        choices=[16, 32, 64, 128, 256],
         help="Batch size during data loading"
     )
 

@@ -1,0 +1,1 @@
+python -m train.training --backbone res_net_18 --dataset "datasets/rat_eye/^.*$" --patience 10 --max_epochs 100 --batch_size 128 --input_size 128
