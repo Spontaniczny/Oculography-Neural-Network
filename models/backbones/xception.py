@@ -96,7 +96,8 @@ class AlignedXception(Backbone):
         self.exit_conv3 = SeparableConv2d(1536, 2048, 3)
         self.bn_exit_3 = nn.BatchNorm2d(2048)
 
-        self.output_channels = 2048
+        self._output_channels = 2048
+        self._output_stride = output_stride
 
     def forward(self, x):
         # Entry flow
@@ -120,8 +121,13 @@ class AlignedXception(Backbone):
 
         return x
     
+    @property
     def output_channels(self):
-        return self.output_channels
+        return self._output_channels
+    
+    @property
+    def output_stride(self):
+        return self._output_stride
     
 def create_xception() -> Backbone:
     return AlignedXception(middle_blocks=8)

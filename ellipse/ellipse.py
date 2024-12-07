@@ -26,7 +26,7 @@ class Ellipse:
         y_norm = self.y_center / w
         major_norm = self.major_axis / h
         minor_norm = self.minor_axis / w
-        angle_norm =  torch.pi * ((self.rotate_angle - 180) / 360)
+        angle_norm =  self.rotate_angle / 180
         return x_norm, y_norm, major_norm, minor_norm, angle_norm
 
     def draw_ellipse_on_image(

@@ -3,6 +3,43 @@ import torch.nn as nn
 from .helper_functions import get_loss_function
 
 
+def compute_loss_metrics(
+        model: nn.Module,
+        test_dataset: torch.utils.data.DataLoader,
+        loss_metrics: list[str],
+        device: str
+    ) -> dict[str, float]:
+    
+    number_of_batches = 0
+
+    metrics_values = {
+        metric: 0.0 for metric in loss_metrics
+    }
+
+    metric_functions = {
+        metric: get_loss_function(metric) for metric in loss_metrics
+    }
+
+    model = model.to(device)
+    model = model.eval()
+
+    with torch.no_grad():
+        for images, labels in test_dataset:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+
+            for metric in loss_metrics:
+                batch_loss = metric_functions[metric](outputs, labels)
+                metrics_values[metric] += batch_loss.item()
+            
+            number_of_batches += 1
+
+    for metric in loss_metrics:
+        metrics_values[metric] /= number_of_batches
+
+    return metrics_values
+
+
 def compute_binned_values_for_batch(
         pred: torch.Tensor, 
         labels: torch.Tensor,
