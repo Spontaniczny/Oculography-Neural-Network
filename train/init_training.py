@@ -11,11 +11,11 @@ from .argparser import parse_arguments, neural_network_config
 from evaluation.segmentation import compute_loss_metrics, binary_metrics, plot_precision_recall, plot_roc
 from evaluation.regression import regression_evaluation_metrics
 
-import wandb
-import wandb
-from dotenv import load_dotenv
-import os
-from PIL import Image
+# import wandb
+# import wandb
+# from dotenv import load_dotenv
+# import os
+# from PIL import Image
 
 
 def choose_device():
@@ -26,18 +26,18 @@ def choose_device():
     return "cpu"
 
 
-def authenticate() -> bool:
-    if not load_dotenv():
-        raise ValueError("Could not find dotenv file")
+# def authenticate() -> bool:
+#     if not load_dotenv():
+#         raise ValueError("Could not find dotenv file")
     
-    wandb_key = os.environ.get("key")
-    if wandb_key is None:
-        raise ValueError("No wandb key Could not authenticate")
+#     wandb_key = os.environ.get("key")
+#     if wandb_key is None:
+#         raise ValueError("No wandb key Could not authenticate")
     
-    if not wandb.login(key=wandb_key, verify=True):
-        raise ValueError("Invalid authentication key")
+#     if not wandb.login(key=wandb_key, verify=True):
+#         raise ValueError("Invalid authentication key")
     
-    return True
+#     return True
 
 
 def main():
@@ -55,7 +55,6 @@ def main():
     train_loader, val_loader, test_loader = prepare_dataloaders(
         ds, [0.6, 0.2, 0.2], batch_size=args.batch_size
     )
-
 
     # Preparing net and moving it to the correct device
     if args.net_type == "segmentation":
@@ -78,15 +77,13 @@ def main():
     nn_config = neural_network_config(args)
     print(f"Neural network config: {nn_config}")
 
-
     net = train(
         model=net,
         train_loader=train_loader,
         val_loader=val_loader,
         criterion=criterion,
         optimizer=optimizer,
-        max_epochs=1,
-        # max_epochs=args.max_epochs,
+        max_epochs=args.max_epochs,
         patience=args.patience,
         device=device
     )
@@ -103,6 +100,9 @@ def main():
         metrics = regression_evaluation_metrics(net, test_loader, "cpu")
         print(metrics)
 
+    net.save_model(nn_config)
+    onnx_path = net.save_onnx(torch.randn(1, 1, args.input_size, args.input_size))
+
     # wandb.summary["loss_metrics"] = loss_metrics
     # wandb.summary["binary_metrics"] = b_metrics
     # wandb.summary.update()
@@ -113,7 +113,7 @@ def main():
     # })
 
     # # Saving neural network
-    # torch.onnx.export(net, torch.randn(1, 1, args.input_size, args.input_size).to(device), "saved_models/onnx_models/model.onnx")
+    
     # wandb.save("saved_models/onnx_models/model.onnx")
 
 

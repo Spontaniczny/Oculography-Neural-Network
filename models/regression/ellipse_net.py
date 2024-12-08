@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 from ..backbones import init_backbone
+from .. import BaseNet
 
-class EllipseNet(nn.Module):
+class EllipseNet(BaseNet):
     def __init__(self, 
         
         input_size: int,

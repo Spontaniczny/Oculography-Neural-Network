@@ -1,12 +1,11 @@
 import torch
 import torch.nn as nn
-from copy import deepcopy
 from typing import Callable
 from torch.utils.data import DataLoader
-from .helper_functions import get_loss_function
+from models import BaseNet
 
 def validate_model(
-        model: nn.Module,
+        model: BaseNet,
         val_dataset: torch.utils.data.DataLoader,
         criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
         device: str
@@ -29,7 +28,7 @@ def validate_model(
     return average_loss
 
 def train(
-    model: nn.Module,
+    model: BaseNet,
     train_loader: DataLoader,
     val_loader: DataLoader,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -43,7 +42,7 @@ def train(
 
     # wandb.watch(model, criterion, log="all")
 
-    best_model, best_loss = model, float("inf")
+    best_loss = float("inf")
     steps_without_improvement = 0
     train_losses, val_losses = [], []
 
@@ -91,13 +90,16 @@ def train(
         if val_loss < best_loss:
             steps_without_improvement = 0
             best_loss = val_loss
-            best_model = deepcopy(model)
+            model.cache_current_weights()
         else:
             steps_without_improvement += 1
             if steps_without_improvement > patience:
                 print("Early stopping")
+                model.load_best_weights()
+                break
+
                 # wandb.log({
                 #     "Early stopping": epoch,
                 # })
 
-    return best_model
+    return model
