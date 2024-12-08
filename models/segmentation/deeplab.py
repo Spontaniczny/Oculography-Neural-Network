@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from ...backbones import init_backbone
+from ..backbones import init_backbone
 
 
 class ASPPConv(nn.Module):
@@ -70,7 +70,8 @@ class DeepLab(nn.Module):
 
     def __init__(
             self, 
-            backbone: str = "res_net_50"
+            backbone: str = "res_net_50",
+            input_size: int = 128
         ):
         super().__init__()
         self.backbone = init_backbone(backbone)

@@ -5,13 +5,14 @@ from ..backbones import init_backbone
 class EllipseNet(nn.Module):
     def __init__(self, 
         
-        net_input_size: int,
+        input_size: int,
         backbone: str = "res_net_18",
         channel_reduction: int = 64
     ):
 
         super().__init__()
-        
+
+        self.input_size = input_size
         self.backbone = init_backbone(backbone)
 
         self.conv = nn.Conv2d(
@@ -20,7 +21,7 @@ class EllipseNet(nn.Module):
             kernel_size=1
         )
 
-        backbone_out_size = (net_input_size // self.backbone.output_stride) ** 2
+        backbone_out_size = (input_size // self.backbone.output_stride) ** 2
 
         self.flatten = nn.Flatten()
         self.linear1 = nn.Linear(channel_reduction*backbone_out_size, 1024)
@@ -44,3 +45,4 @@ class EllipseNet(nn.Module):
         x = self.relu(x)
         x = self.linear3(x)
         return x
+    
