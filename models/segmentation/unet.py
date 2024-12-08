@@ -17,7 +17,8 @@ class U_NET(nn.Module):
             self, 
             depth: int = 3,
             start_dim_channel_dim: int = 16,
-            upsampling_method: str = "conv_transposed"
+            upsampling_method: str = "conv_transposed",
+            input_size: int = 128
         ) -> None:
         
         super().__init__()

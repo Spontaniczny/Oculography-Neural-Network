@@ -1,18 +1,36 @@
 import torch
 import torch.nn as nn
+import torch.optim
+from typing import Callable
 from losses.segmentation.losses import DSCLoss, IoULoss, MAE
+from losses.regression.losses import WeightedSmoothL1Loss
 
 
-def get_loss_function(loss_name: str) -> nn.Module:
-    match loss_name:
-        case "dice":
-            return DSCLoss()
-        case "iou":
-            return IoULoss()
-        case "bce":
-            return nn.BCEWithLogitsLoss()
-        case "mae":
-            return MAE()
-        case _:
-            raise ValueError(f"Provided unknow loss function named {loss_name}")
+def get_loss_function(loss_name: str, net_type: str) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
+    if net_type == "segmentation":
+        match loss_name:
+            case "dice":
+                return DSCLoss()
+            case "iou":
+                return IoULoss()
+            case "bce":
+                return nn.BCEWithLogitsLoss()
+            case "mae":
+                return MAE()
+            case _:
+                raise ValueError(f"Provided loss function {loss_name} is not suitable for {net_type} net")
+    elif net_type == "regression":
+        match loss_name:
+            case "smooth_l1":
+                return nn.SmoothL1Loss()
+            case "weighted_smooth_l1":
+                return WeightedSmoothL1Loss()
+            case _:
+                raise ValueError(f"Provided loss function {loss_name} is not suitable for {net_type} net")
+    else:
+        raise ValueError(f"Unknow type of net: {net_type}")
+    
+
+def get_core_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
+	return getattr(torch.optim, optimizer_name)
         

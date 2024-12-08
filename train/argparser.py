@@ -3,7 +3,10 @@ from typing import Any
 
 def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
     nn_config = {
-        "backbone": args.backbone
+        "net_type": args.net_type,
+        "backbone": args.backbone,
+        "input_size": args.input_size,
+        "training_data": args.dataset
     }
     return nn_config
 
@@ -18,6 +21,14 @@ def parse_arguments() -> argparse.Namespace:
     ]
 
     parser.add_argument(
+        "--net_type",
+        type=str,
+        choices=["segmentation", "regression"],
+        default="segmentation",
+        required=True,
+    )
+
+    parser.add_argument(
         "--backbone", 
         type=str, choices=available_backbones, 
         nargs="?",
@@ -26,10 +37,27 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--input_size",
+        type=int,
+        default=128,
+        choices=[128, 256, 512],
+        required=True,
+        help="Size of input images (if smaller rescaling is applied)"
+    )
+
+    parser.add_argument(
         "--dataset",
         type=str,
         required=True,
         help="Path to directory with training data"
+    )
+
+    parser.add_argument(
+        "--loss_type",
+        type=str,
+        default="dice",
+        choices=["dice", "iou", "bce", "smooth_l1", "weighted_smooth_l1"],
+        help="Loss functions used for training"
     )
 
     parser.add_argument(
@@ -42,6 +70,13 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--optimizer",
+        type=str,
+        default="AdamW",
+        choices=["AdamW", "Adam"]
+    )
+
+    parser.add_argument(
         "--max_epochs",
         type=int,
         default=50,
@@ -51,27 +86,11 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--loss_type",
-        type=str,
-        default="dice",
-        choices=["dice", "iou", "bce"],
-        help="Loss functions used for training"
-    )
-
-    parser.add_argument(
         "--batch_size",
         type=int,
         default=16,
         choices=[16, 32, 64, 128, 256],
         help="Batch size during data loading"
-    )
-
-    parser.add_argument(
-        "--input_size",
-        type=int,
-        default=None,
-        choices=[128, 256, 512],
-        help="Size of input images (if smaller rescaling is applied)"
     )
 
     args = parser.parse_args()

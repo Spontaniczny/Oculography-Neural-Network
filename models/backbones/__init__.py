@@ -9,8 +9,10 @@ def init_backbone(backbone: str) -> Backbone:
             return create_res_net_18()
         case "res_net_34":
             return create_res_net_34()
+        case "res_net_50":
+            return create_res_net_50()
         case "xception":
             return create_xception()
         case _:
-            return create_res_net_50()
+            raise ValueError(f"Unknown backbone {backbone}")
         
