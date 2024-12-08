@@ -2,7 +2,7 @@ import os
 import re
 import pandas as pd
 from typing import Type, Optional
-from torch.utils.data import ConcatDataset
+from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
 from .datasets import SegmentationDataset, RegressionDataset
 
 
@@ -102,3 +102,19 @@ def split_path(path: str) -> tuple[str, str]:
 def load_dataset(dataset_path: str, input_size: int, dataset_type: str = "segmentation"):
     prefix, suffix = split_path(dataset_path)
     return load_multiple_datasets(dataset_type, prefix, input_size, suffix_regex=suffix)
+
+
+def prepare_dataloaders(
+        dataset: Dataset,
+        split_ratio: list[float],
+        batch_size: int = 16, 
+        shuffle: bool = True,
+        num_workers: int = 0,
+    ) -> tuple[DataLoader, DataLoader, DataLoader]:
+
+    train_set, val_set, test_set = random_split(dataset, split_ratio)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    test_loader = DataLoader(test_set, batch_size=batch_size)
+    
+    return train_loader, val_loader, test_loader

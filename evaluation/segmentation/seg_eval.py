@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
-from .helper_functions import get_loss_function
-
+from train.helper_functions import get_loss_function
+from models.segmentation import DeepLab
 
 def compute_loss_metrics(
-        model: nn.Module,
+        model: DeepLab,
         test_dataset: torch.utils.data.DataLoader,
         loss_metrics: list[str],
-        device: str
+        net_type: str,
+        device: str,
     ) -> dict[str, float]:
     
     number_of_batches = 0
@@ -17,7 +18,7 @@ def compute_loss_metrics(
     }
 
     metric_functions = {
-        metric: get_loss_function(metric) for metric in loss_metrics
+        metric: get_loss_function(metric, net_type) for metric in loss_metrics
     }
 
     model = model.to(device)
@@ -107,7 +108,7 @@ def binary_metrics(
     false_positive_rate = fp_binned / (fp_binned + tn_binned + eps)
     false_positive_rate[0] = 1.0
 
-    f1_score = 2*precision*recall / (precision + recall)
+    f1_score = 2*precision*recall / (precision + recall + eps)
     opt_threshold = bins[f1_score.argmax()]
 
     return {
