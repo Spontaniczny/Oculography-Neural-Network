@@ -11,11 +11,8 @@ from .argparser import parse_arguments, neural_network_config
 from evaluation.segmentation import compute_loss_metrics, binary_metrics, plot_precision_recall, plot_roc
 from evaluation.regression import regression_evaluation_metrics
 
-# import wandb
-# import wandb
-# from dotenv import load_dotenv
-# import os
-# from PIL import Image
+from callbacks import TrainingLogger
+from datetime import datetime
 
 
 def choose_device():
@@ -26,29 +23,16 @@ def choose_device():
     return "cpu"
 
 
-# def authenticate() -> bool:
-#     if not load_dotenv():
-#         raise ValueError("Could not find dotenv file")
-    
-#     wandb_key = os.environ.get("key")
-#     if wandb_key is None:
-#         raise ValueError("No wandb key Could not authenticate")
-    
-#     if not wandb.login(key=wandb_key, verify=True):
-#         raise ValueError("Invalid authentication key")
-    
-#     return True
-
-
 def main():
-    # ds = load_dataset("../../datasets/rat_eye/^.*$", 128)
-    # ds = prepare_segmentation_dataset(args.dataset, input_size=args.input_size)
 
+    # Parsing command line arguments
     args = parse_arguments()
-
-    # authenticate()
-    # with wandb.init(project="first_experiment", config=nn_config) as run:
-
+    
+    logger = TrainingLogger(
+        project_name="rat_eye", 
+        run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
+        config=vars(args)
+    )
 
     # Preparing dataset and train, validation and test data_loaders
     ds = load_dataset(args.dataset, input_size=args.input_size, dataset_type=args.net_type)
@@ -81,40 +65,38 @@ def main():
         model=net,
         train_loader=train_loader,
         val_loader=val_loader,
+        logger=logger,
         criterion=criterion,
         optimizer=optimizer,
         max_epochs=args.max_epochs,
         patience=args.patience,
-        device=device
+        device=device,
     )
 
-
     # Model evaluation
-
+    print("Model evaluation")
     if args.net_type == "segmentation":
         loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou"], args.net_type, device)
         b_metrics = binary_metrics(net, test_loader, device)
+
+        logger.save_scalar_metrics(loss_metrics)
+        logger.save_metrics_table(b_metrics, "Binary prediction eval metrics")
+
         prc_curve = plot_precision_recall(b_metrics)
         roc_curve = plot_roc(b_metrics)
+
+        logger.save_fig("prc_curve", prc_curve)
+        logger.save_fig("roc_curve", roc_curve)
     else:
         metrics = regression_evaluation_metrics(net, test_loader, "cpu")
-        print(metrics)
+        logger.save_scalar_metrics(metrics)
 
+    print("Saving net parameters and config")
+    # Saving neural network
     net.save_model(nn_config)
-    onnx_path = net.save_onnx(torch.randn(1, 1, args.input_size, args.input_size))
+    logger.save_onnx_model(net, input_tensor=torch.randn(1, 1, args.input_size, args.input_size))
 
-    # wandb.summary["loss_metrics"] = loss_metrics
-    # wandb.summary["binary_metrics"] = b_metrics
-    # wandb.summary.update()
-
-    # wandb.log({
-    #     "prc_curve": wandb.Image(Image.open(plot_precision_recall(b_metrics))),
-    #     "roc_curve": wandb.Image(Image.open(plot_roc(b_metrics))),
-    # })
-
-    # # Saving neural network
-    
-    # wandb.save("saved_models/onnx_models/model.onnx")
+    print("Finished training and evaluation")
 
 
 if __name__ == "__main__":
