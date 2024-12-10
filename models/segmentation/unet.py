@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.nn.functional import sigmoid
+from .. import BaseNet
 
 
 def _convolutions(in_channels: int, out_channels: int, padding: int = 1) -> nn.Sequential:
@@ -11,10 +12,10 @@ def _convolutions(in_channels: int, out_channels: int, padding: int = 1) -> nn.S
         nn.ReLU(),
     )
 
-class U_NET(nn.Module):
+class U_NET(BaseNet):
     
     def __init__(
-            self, 
+            self,
             depth: int = 3,
             start_dim_channel_dim: int = 16,
             upsampling_method: str = "conv_transposed",

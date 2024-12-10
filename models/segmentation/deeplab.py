@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from ..backbones import init_backbone
+from .. import BaseNet
 
 
 class ASPPConv(nn.Module):
@@ -66,7 +67,7 @@ class ASPP(nn.Module):
         return project
     
 
-class DeepLab(nn.Module):
+class DeepLab(BaseNet):
 
     def __init__(
             self, 
