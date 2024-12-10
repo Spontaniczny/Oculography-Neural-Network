@@ -42,33 +42,3 @@ class BaseNet(nn.Module):
 
         torch.save(self.state_dict(), f"{saving_path}/{experiment_id}.pt")
 
-    def save_onnx(self, input_tensor: torch.Tensor) -> str:
-
-        self.to("cpu")
-        saving_path = "tmp/model.onnx"
-        torch.onnx.export(self, input_tensor.to("cpu"), saving_path)
-        return saving_path
-        
-    # @abstractmethod
-    # def on_batch_start_callback():
-    #     pass
-
-    # @abstractmethod
-    # def on_batch_end_callback():
-    #     pass
-
-    # @abstractmethod
-    # def on_epoch_start_callback():
-    #     pass
-
-    # @abstractmethod
-    # def on_epoch_end_callback():
-    #     pass
-
-    # @abstractmethod
-    # def on_training_start_callback():
-    #     pass
-
-    # @abstractmethod
-    # def on_training_end_callback():
-    #     pass
