@@ -1,15 +1,15 @@
 import torch
 import torch.nn as nn
-from copy import deepcopy
 from typing import Callable
 from torch.utils.data import DataLoader
-from .helper_functions import get_loss_function
+from models import BaseNet
+from callbacks import TrainingLogger
 
 def validate_model(
-        model: nn.Module,
+        model: BaseNet,
         val_dataset: torch.utils.data.DataLoader,
         criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
-        device: str
+        device: str,
     ) -> float:
     
     total_loss = 0.0
@@ -29,24 +29,22 @@ def validate_model(
     return average_loss
 
 def train(
-    model: nn.Module,
+    model: BaseNet,
     train_loader: DataLoader,
     val_loader: DataLoader,
+    logger: TrainingLogger,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
     optimizer: torch.optim.Optimizer,
     max_epochs: int = 50,
     patience: int = 5, # parameter for early stopping
     device: str = "cpu",
 ):
-    
+
     model.to(device)
+    logger.model_watch(model, criterion, log_step=100)
 
-    # wandb.watch(model, criterion, log="all")
-
-    best_model, best_loss = model, float("inf")
+    best_loss = float("inf")
     steps_without_improvement = 0
-    train_losses, val_losses = [], []
-
 
     for epoch in range(max_epochs):
         epoch_loss = 0.0
@@ -69,35 +67,22 @@ def train(
             number_of_batches += 1
 
             if (i + 1) % 10 == 0:
-                print(f"Batch: {i + 1}")
-                # wandb.log({
-                #     "batch": number_of_batches,
-                #     "Current_average_loss": epoch_loss / number_of_batches
-                # })
+                logger.on_batch_end(i + 1, epoch_loss)
         
         train_loss = epoch_loss / number_of_batches
-        train_losses.append(train_loss)
-
         val_loss = validate_model(model, val_loader, criterion, device)
-        val_losses.append(val_loss)
+        logger.on_epoch_end(epoch, train_loss, val_loss)
 
-        # wandb.log({
-        #     "Train average loss": train_loss,
-        #     "Validation average loss": val_loss
-        # })
-
-        print("Train average loss", train_loss)
-        print("Validation average loss", val_loss)
         if val_loss < best_loss:
             steps_without_improvement = 0
             best_loss = val_loss
-            best_model = deepcopy(model)
+            model.cache_current_weights()
         else:
             steps_without_improvement += 1
             if steps_without_improvement > patience:
                 print("Early stopping")
-                # wandb.log({
-                #     "Early stopping": epoch,
-                # })
-
-    return best_model
+                model.load_best_weights()
+                break
+    
+    logger.on_training_end()
+    return model

@@ -1,12 +1,15 @@
 import argparse
 from typing import Any
+import uuid
 
 def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
+    experiment_id = str(uuid.uuid4())
     nn_config = {
         "net_type": args.net_type,
         "backbone": args.backbone,
         "input_size": args.input_size,
-        "training_data": args.dataset
+        "training_data": args.dataset,
+        "experiment_id": experiment_id
     }
     return nn_config
 
