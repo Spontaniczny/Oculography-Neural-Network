@@ -1,6 +1,6 @@
 python -m train.init_training \
-    --net_type "segmentation" \
-    --backbone res_net_18 \
+    --net_type segmentation \
+    --backbone mobile_net_small \
     --input_size 128 \
     --dataset datasets/rat_eye/^.*$ \
     --loss_type  dice \
