@@ -1,1 +1,1 @@
-from .losses import DSCLoss, IoULoss, MAE
+from .losses import DSCLoss, IoULoss, MAE, MCCLoss, FocalLoss

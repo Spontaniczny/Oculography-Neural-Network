@@ -80,7 +80,7 @@ def save_results(input_batch: torch.Tensor, result_masks: torch.Tensor, save_fol
 
 
 def main():
-    config_path = "saved_models/ellipsenet/11:12:2024-02:17:45.json"
+    config_path = "saved_models/deeplab/15:12:2024-20:34:55.json"
     config = load_config_file(config_path)
     model = load_model(config, config_path)
     dataset_path = "datasets/rat_eye/40"
@@ -94,7 +94,7 @@ def main():
     
     # print(out)
     # print(out.shape)
-    save_results(batch, out, "11")
+    save_results(batch, out, "12")
 
 
 if __name__ == "__main__":
