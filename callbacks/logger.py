@@ -48,7 +48,7 @@ class TrainingLogger:
         })
 
     def on_epoch_end(self, epoch: int, train_loss: float, val_loss: float):
-        print(f"End of epoch {epoch}")
+        print(f"End of epoch {epoch + 1}")
         print(f"Training loss: {train_loss}")
         print(f"Validation loss: {val_loss}")
 
@@ -80,8 +80,8 @@ class TrainingLogger:
 
         buffer = BytesIO()
         plt.savefig(buffer, format='png')
-        plt.close()
         self.save_fig(fig_name="Train/val_loss_plot", buffer=buffer)
+        plt.close()
 
 
     def save_fig(self, fig_name: str, buffer: BytesIO):
@@ -99,9 +99,6 @@ class TrainingLogger:
         df = pd.DataFrame.from_dict(metrics)
         table = wandb.Table(dataframe=df)
         wandb.log({metrics_name: table})
-        
-    def log_evaluation_stats(self):
-        pass
 
 
 if __name__ == "__main__":

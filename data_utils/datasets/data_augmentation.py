@@ -28,8 +28,8 @@ class HorizontalFlip(Transform):
 class ResizedCrop(Transform):
     def __init__(
             self,
-            scale: tuple[float, float] = (0.04, 0.2),
-            ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+            scale: tuple[float, float] = (0.04, 0.1),
+            ratio: tuple[float, float] = (0.9, 1.1),
             input_interpolation: v2.InterpolationMode = v2.InterpolationMode.BILINEAR,
             mask_interpolation: v2.InterpolationMode = v2.InterpolationMode.NEAREST
         ):
