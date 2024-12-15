@@ -1,6 +1,6 @@
 from .res_net import create_res_net_18, create_res_net_34, create_res_net_50
 from .xception import create_xception
-from .mobile_net import create_mobile_net_small
+from .mobile_net import create_mobile_net_small, create_mobile_net_large
 from .backbone import Backbone
 
 
@@ -16,6 +16,8 @@ def init_backbone(backbone: str) -> Backbone:
             return create_xception()
         case "mobile_net_small":
             return create_mobile_net_small()
+        case "mobile_net_large":
+            return create_mobile_net_large()
         case _:
             raise ValueError(f"Unknown backbone {backbone}")
         

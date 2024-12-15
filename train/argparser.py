@@ -9,6 +9,7 @@ def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
         "backbone": args.backbone,
         "input_size": args.input_size,
         "training_data": args.dataset,
+        "augment": args.augment,
         "experiment_id": experiment_id
     }
     return nn_config
@@ -21,7 +22,8 @@ def parse_arguments() -> argparse.Namespace:
         "res_net_34",
         "res_net_18",
         "xception",
-        "mobile_net_small"
+        "mobile_net_small",
+        "mobile_net_large"
     ]
 
     parser.add_argument(
@@ -53,6 +55,13 @@ def parse_arguments() -> argparse.Namespace:
         "--dataset",
         type=str,
         required=True,
+        help="Path to directory with training data"
+    )
+
+    parser.add_argument(
+        "--augment",
+        type=bool,
+        default=False,
         help="Path to directory with training data"
     )
 
