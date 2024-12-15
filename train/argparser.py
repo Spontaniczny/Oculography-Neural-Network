@@ -65,11 +65,23 @@ def parse_arguments() -> argparse.Namespace:
         help="Path to directory with training data"
     )
 
+
+    losses = [
+        "dice", 
+        "iou", 
+        "bce",
+        "mcc",
+        "focal",
+        "smooth_l1", 
+        "weighted_smooth_l1",
+        "sin_smooth_l1",
+    ]
+
     parser.add_argument(
         "--loss_type",
         type=str,
         default="dice",
-        choices=["dice", "iou", "bce", "smooth_l1", "weighted_smooth_l1"],
+        choices=losses,
         help="Loss functions used for training"
     )
 

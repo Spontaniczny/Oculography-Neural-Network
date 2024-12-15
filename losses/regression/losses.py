@@ -17,3 +17,20 @@ class WeightedSmoothL1Loss(nn.Module):
         labels *= self.weights
         return self.loss_func(pred, labels)
     
+
+class SineSmoothL1Loss(nn.Module):
+    def __init__(
+        self,
+    ):  
+        super().__init__()
+        self.loss_func = nn.SmoothL1Loss()
+
+    def forward(self, pred: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        pred[:, -1] = torch.sin(pred[:, -1])
+        labels[:, -1] = torch.sin(labels[:, -1])
+        return self.loss_func(pred, labels)
+
+
+
+class GaussianLoss(nn.Module):
+    pass

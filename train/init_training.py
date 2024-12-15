@@ -76,7 +76,7 @@ def main():
     # Model evaluation
     print("Model evaluation")
     if args.net_type == "segmentation":
-        loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou"], args.net_type, device)
+        loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou", "mcc"], args.net_type, device)
         b_metrics = binary_metrics(net, test_loader, device)
 
         logger.save_scalar_metrics(loss_metrics)
@@ -94,7 +94,7 @@ def main():
     print("Saving net parameters and config")
     # Saving neural network
     net.save_model(nn_config)
-    logger.save_onnx_model(net, input_tensor=torch.randn(1, 1, args.input_size, args.input_size))
+    # logger.save_onnx_model(net, input_tensor=torch.randn(1, 1, args.input_size, args.input_size))
 
     print("Finished training and evaluation")
 

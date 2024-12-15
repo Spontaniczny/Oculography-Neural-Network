@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim
 from typing import Callable
-from losses.segmentation.losses import DSCLoss, IoULoss, MAE
-from losses.regression.losses import WeightedSmoothL1Loss
+from losses.segmentation.losses import DSCLoss, IoULoss, MAE, MCCLoss, FocalLoss
+from losses.regression.losses import WeightedSmoothL1Loss, SineSmoothL1Loss
 
 
 def get_loss_function(loss_name: str, net_type: str) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
@@ -17,14 +17,21 @@ def get_loss_function(loss_name: str, net_type: str) -> Callable[[torch.Tensor, 
                 return nn.BCEWithLogitsLoss()
             case "mae":
                 return MAE()
+            case "mcc":
+                return MCCLoss()
+            case "focal":
+                return FocalLoss()
             case _:
                 raise ValueError(f"Provided loss function {loss_name} is not suitable for {net_type} net")
+            
     elif net_type == "regression":
         match loss_name:
             case "smooth_l1":
                 return nn.SmoothL1Loss()
             case "weighted_smooth_l1":
                 return WeightedSmoothL1Loss()
+            case "sin_smooth_l1":
+                return SineSmoothL1Loss()
             case _:
                 raise ValueError(f"Provided loss function {loss_name} is not suitable for {net_type} net")
     else:
