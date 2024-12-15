@@ -20,7 +20,8 @@ def parse_arguments() -> argparse.Namespace:
         "res_net_50",
         "res_net_34",
         "res_net_18",
-        "xception"
+        "xception",
+        "mobile_net_small"
     ]
 
     parser.add_argument(

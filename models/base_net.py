@@ -3,9 +3,9 @@ import torch.nn as nn
 import os
 import json
 import datetime
-# from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod
 
-class BaseNet(nn.Module):
+class BaseNet(nn.Module, ABC):
 
     def __init__(self):
         super().__init__()
@@ -42,3 +42,6 @@ class BaseNet(nn.Module):
 
         torch.save(self.state_dict(), f"{saving_path}/{experiment_id}.pt")
 
+    @abstractmethod
+    def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
+        pass

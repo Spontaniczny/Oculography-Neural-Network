@@ -37,7 +37,7 @@ def main():
     # Preparing dataset and train, validation and test data_loaders
     ds = load_dataset(args.dataset, input_size=args.input_size, dataset_type=args.net_type)
     train_loader, val_loader, test_loader = prepare_dataloaders(
-        ds, [0.6, 0.2, 0.2], batch_size=args.batch_size
+        ds, [0.4, 0.3, 0.3], args.input_size, batch_size=args.batch_size, augment=True,
     )
 
     # Preparing net and moving it to the correct device

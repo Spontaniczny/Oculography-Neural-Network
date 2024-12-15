@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from typing import Type, Optional
 from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
-from .datasets import SegmentationDataset, RegressionDataset
+from .datasets import SegmentationDataset, RegressionDataset, AugmentedDataset
 
 
 def find_annotations(data_dir_path: str):
@@ -107,14 +107,40 @@ def load_dataset(dataset_path: str, input_size: int, dataset_type: str = "segmen
 def prepare_dataloaders(
         dataset: Dataset,
         split_ratio: list[float],
+        input_size: int,
         batch_size: int = 16, 
         shuffle: bool = True,
-        num_workers: int = 0,
+        num_workers: int = 6,
+        augment: bool = False,
+        
     ) -> tuple[DataLoader, DataLoader, DataLoader]:
 
     train_set, val_set, test_set = random_split(dataset, split_ratio)
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+
+    if augment:
+        train_set = AugmentedDataset(train_set, input_size=input_size)
+
+    train_loader = DataLoader(
+        train_set, 
+        batch_size=batch_size, 
+        shuffle=shuffle, 
+        num_workers=num_workers,
+        prefetch_factor=6,
+        drop_last=False,
+        pin_memory=True,
+        persistent_workers=True
+    )
+
+    val_loader = DataLoader(
+        val_set, 
+        batch_size=batch_size, 
+        shuffle=shuffle, 
+        num_workers=num_workers,
+        prefetch_factor=6,
+        drop_last=False,
+        pin_memory=True,
+        persistent_workers=True
+    )
     test_loader = DataLoader(test_set, batch_size=batch_size)
     
     return train_loader, val_loader, test_loader
