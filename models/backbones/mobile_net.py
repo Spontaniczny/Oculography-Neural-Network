@@ -137,6 +137,67 @@ class MobileNetSmall(Backbone):
         return self._output_stride
 
 
+
+class MobileNetLarge(Backbone):
+    def __init__(self):
+        
+        super().__init__()
+        
+        self.first_block = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(16),
+            nn.Hardswish()
+        )
+
+        self.inverted_residuals = nn.Sequential(
+            InvertedResidual(16, 16, 16, kernel=3, stride=1, use_se=False, activation_name="relu"),
+            InvertedResidual(16, 64, 24, kernel=3, stride=2, use_se=False, activation_name="relu"),
+            InvertedResidual(24, 72, 24, kernel=3, stride=1, use_se=False, activation_name="relu"),
+            InvertedResidual(24, 72, 40, kernel=5, stride=1, use_se=True, inter_channels=24, activation_name="relu"),
+            InvertedResidual(40, 120, 40, kernel=5, stride=1, use_se=True, inter_channels=32, activation_name="relu"),
+            InvertedResidual(40, 120, 40, kernel=5, stride=1, use_se=True, inter_channels=32, activation_name="relu"),
+            InvertedResidual(40, 240, 80, kernel=3, stride=2, use_se=False),
+            InvertedResidual(80, 200, 80, kernel=3, stride=1, use_se=False),
+            InvertedResidual(80, 184, 80, kernel=3, stride=1, use_se=False),
+            InvertedResidual(80, 184, 80, kernel=3, stride=1, use_se=False),
+            InvertedResidual(80, 480, 112, kernel=3, stride=1, use_se=True, inter_channels=120),
+            InvertedResidual(112, 672, 112, kernel=3, stride=1, use_se=True, inter_channels=168),
+            InvertedResidual(112, 672, 160, kernel=5, stride=1, use_se=True, inter_channels=168),
+            InvertedResidual(160, 960, 160, kernel=5, stride=1, use_se=True, inter_channels=240),
+            InvertedResidual(160, 960, 160, kernel=5, stride=1, use_se=True, inter_channels=240),
+        )
+        
+        self.last_block = nn.Sequential(
+            nn.Conv2d(160, 960, kernel_size=1, bias=False),
+            nn.BatchNorm2d(960),
+            nn.Hardswish()
+        )
+
+        self._output_channels = 960
+        self._output_stride = 8
+        
+
+    def forward(self, x):
+        x = self.first_block(x)
+        x = self.inverted_residuals(x)
+        x = self.last_block(x)
+        return x
+    
+    @property
+    def output_channels(self):
+        return self._output_channels
+    
+    @property
+    def output_stride(self):
+        return self._output_stride
+    
+
 def create_mobile_net_small() -> MobileNetSmall:
     mobile_net_small = MobileNetSmall()
     return mobile_net_small
+
+
+def create_mobile_net_large() -> MobileNetLarge:
+    mobile_net_small = MobileNetLarge()
+    return mobile_net_small
+

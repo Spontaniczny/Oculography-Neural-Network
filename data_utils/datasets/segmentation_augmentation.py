@@ -1,5 +1,4 @@
 from random import randrange, uniform
-from scipy.stats import halfcauchy
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from .segmentation_dataset import SegmentationDataset
@@ -9,14 +8,14 @@ from torchvision.io import decode_image
 
 
 
-class Transform(ABC):
+class SegmentationTransform(ABC):
 
     @abstractmethod
     def __call__(self, input_image: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         pass 
 
 
-class HorizontalFlip(Transform):
+class SegmentationHorizontalFlip(SegmentationTransform):
 
     def __init__(self):
         super().__init__()
@@ -25,35 +24,27 @@ class HorizontalFlip(Transform):
         return torch.flip(input_image, (-1, )), torch.flip(mask, (-1, ))
     
 
-class ResizedCrop(Transform):
+class SegmentationResizedCrop(SegmentationTransform):
     def __init__(
             self,
-            scale: tuple[float, float] = (0.04, 0.1),
-            ratio: tuple[float, float] = (0.9, 1.1),
-            input_interpolation: v2.InterpolationMode = v2.InterpolationMode.BILINEAR,
-            mask_interpolation: v2.InterpolationMode = v2.InterpolationMode.NEAREST
+            scale: tuple[float, float] = (0.1, 0.3),
         ):
         
         super().__init__()
         self.scale = scale
-        self.ratio = ratio
-        self.input_interpolation = input_interpolation
-        self.mask_interpolation = mask_interpolation
     
     def draw_crop_parameters(self) -> tuple[float, float, float, float]:
         left = uniform(*self.scale)
         top = uniform(*self.scale)
-        width = uniform(self.scale[1], 1.0 - left)
-        r_ratio = uniform(*self.ratio)
-        height = max(1.0 - top, width / r_ratio)
-
-        return top, left, width, height
+        height = uniform(1 - self.scale[1], 1.0 - top)
+        width = uniform(1 - self.scale[1], 1.0 - left)
+        return top, left, height, width
 
     def __call__(self, input_image: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         
         params = self.draw_crop_parameters()
-        mask_cropped = self.crop_and_resize(mask, params, self.input_interpolation)
-        input_cropped = self.crop_and_resize(input_image, params, self.mask_interpolation)
+        input_cropped = self.crop_and_resize(input_image, params, v2.InterpolationMode.BILINEAR)
+        mask_cropped = self.crop_and_resize(mask, params, v2.InterpolationMode.NEAREST)
         return input_cropped, mask_cropped
     
 
@@ -78,20 +69,19 @@ class ResizedCrop(Transform):
         return cropped
     
 
-class AugmentedDataset(Dataset):
+class SegmentationAugmented(Dataset):
 
     def __init__(
             self, 
             base_dataset: SegmentationDataset,
-            input_size: int
             
         ) -> None:
         super().__init__()
         
         self.base_dataset = base_dataset
         self.transforms = [
-            HorizontalFlip(),
-            ResizedCrop()
+            SegmentationHorizontalFlip(),
+            SegmentationResizedCrop()
         ]
         self.count_transforms = len(self.transforms)
 
@@ -105,20 +95,3 @@ class AugmentedDataset(Dataset):
             return self.transforms[choice](input_img, mask)
         return input_img, mask
     
-    
-if __name__ == "__main__":
-    image = decode_image("../datasets/mouse/frames/2P-fc2_save_20200806_1_0002.jpg")
-    mask = decode_image("../datasets/mouse/annotations/2P-fc2_save_20200806_1_0002.png")
-
-    flip = ResizedCrop()
-    image, mask = flip(image, mask)
-    
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(1, 2)
-
-    ax[0].imshow(image.permute(1, 2, 0), cmap="grey")
-    ax[1].imshow(mask.permute(1, 2, 0), cmap="grey") 
-    ax[0].axis("off")
-    ax[1].axis("off")
-    plt.show()
