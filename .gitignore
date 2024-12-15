@@ -6,6 +6,7 @@
 datasets/*
 saved_models/*
 tmp/*
+results/*
 !*.gitkeep
 *.egg-info
 NN_human_mouse_eyes
@@ -13,3 +14,4 @@ data_dump/
 .env
 wandb
 *.onnx
+notebooks

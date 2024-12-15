@@ -75,28 +75,28 @@ class AlignedXception(Backbone):
 
         self.entry_block1 = Block(64, 128, last_stride=strides[0], downsampling=True)
         self.entry_block2 = Block(128, 256, last_stride=strides[1], downsampling=True)
-        self.entry_block3 = Block(256, 728, last_stride=strides[2], downsampling=True)
+        self.entry_block3 = Block(256, 256, last_stride=strides[2], downsampling=True)
 
         # Middle flow
 
         self.middle_flow = nn.ModuleList([
-            Block(728, 728)
+            Block(256, 256)
             for _ in range(middle_blocks)
         ])
 
         # Exit flow
-        self.exit_block = Block(728, 1024, last_stride=2, downsampling=True)
+        self.exit_block = Block(256, 256, last_stride=2, downsampling=True)
 
-        self.exit_conv1 = SeparableConv2d(1024, 1536, 3)
-        self.bn_exit_1 = nn.BatchNorm2d(1536)
+        self.exit_conv1 = SeparableConv2d(256, 512, 3)
+        self.bn_exit_1 = nn.BatchNorm2d(512)
 
-        self.exit_conv2 = SeparableConv2d(1536, 1536, 3)
-        self.bn_exit_2 = nn.BatchNorm2d(1536)
+        self.exit_conv2 = SeparableConv2d(512, 512, 3)
+        self.bn_exit_2 = nn.BatchNorm2d(512)
 
-        self.exit_conv3 = SeparableConv2d(1536, 2048, 3)
-        self.bn_exit_3 = nn.BatchNorm2d(2048)
+        self.exit_conv3 = SeparableConv2d(512, 1024, 3)
+        self.bn_exit_3 = nn.BatchNorm2d(1024)
 
-        self._output_channels = 2048
+        self._output_channels = 1024
         self._output_stride = output_stride
 
     def forward(self, x):

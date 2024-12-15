@@ -41,7 +41,7 @@ def train(
 ):
 
     model.to(device)
-    logger.model_watch(model, criterion, log_step=100)
+    # logger.model_watch(model, criterion, log_step=100)
 
     best_loss = float("inf")
     steps_without_improvement = 0
