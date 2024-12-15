@@ -1,5 +1,5 @@
 import torch
-from losses.segmentation import DSCLoss, MAE, IoULoss
+from losses.segmentation import DSCLoss, MAE, IoULoss, MCCLoss
 from losses.regression import WeightedSmoothL1Loss
 from ellipse import Ellipse
 from torch.utils.data import DataLoader
@@ -13,12 +13,12 @@ def regression_evaluation_metrics(
 
     number_of_batches = 0
 
-    mask_metrics = ["mae", "dice", "iou"]
+    mask_metrics = ["mae", "dice", "iou", "mcc"]
     ellipse_loss = 0.0
     ellipse_loss_fn = WeightedSmoothL1Loss()
 
-    metrics_values = {"mae": 0.0, "dice": 0.0, "iou": 0.0}
-    metric_functions = {"mae": MAE(), "dice" : DSCLoss(), "iou" : IoULoss()}
+    metrics_values = {"mae": 0.0, "dice": 0.0, "iou": 0.0, "mcc": 0.0}
+    metric_functions = {"mae": MAE(), "dice" : DSCLoss(), "iou" : IoULoss(), "mcc": MCCLoss}
 
     model = model.to(device)
     model = model.eval()

@@ -3,7 +3,8 @@ python -m train.init_training \
     --backbone mobile_net_small \
     --input_size 128 \
     --dataset datasets/rat_eye/^.*$ \
-    --loss_type  dice \
+    --augment False \
+    --loss_type iou \
     --optimizer AdamW \
     --patience 10 \
     --max_epochs 100 \
