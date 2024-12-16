@@ -117,7 +117,6 @@ def prepare_dataloaders(
 
     train_set, val_set, test_set = random_split(dataset, split_ratio)
 
-    print(dataset_type)
     if augment:
         if dataset_type == "regression":
             train_set = RegressionAugmented(train_set)

@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 from models import BaseNet
 from callbacks import TrainingLogger
 
+
+@torch.no_grad()
 def validate_model(
         model: BaseNet,
         val_dataset: torch.utils.data.DataLoader,
@@ -16,14 +18,13 @@ def validate_model(
     number_of_batches = 0
 
     model = model.eval()
-    with torch.no_grad():
-        for images, labels in val_dataset:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
+    for images, labels in val_dataset:
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
 
-            batch_loss = criterion(outputs, labels)
-            total_loss += batch_loss.item()
-            number_of_batches += 1
+        batch_loss = criterion(outputs, labels)
+        total_loss += batch_loss.item()
+        number_of_batches += 1
 
     average_loss = total_loss / number_of_batches
     return average_loss

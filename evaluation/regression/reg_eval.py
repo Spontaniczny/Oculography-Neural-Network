@@ -18,7 +18,7 @@ def regression_evaluation_metrics(
     ellipse_loss_fn = WeightedSmoothL1Loss()
 
     metrics_values = {"mae": 0.0, "dice": 0.0, "iou": 0.0, "mcc": 0.0}
-    metric_functions = {"mae": MAE(), "dice" : DSCLoss(), "iou" : IoULoss(), "mcc": MCCLoss}
+    metric_functions = {"mae": MAE(), "dice" : DSCLoss(), "iou" : IoULoss(), "mcc": MCCLoss()}
 
     model = model.to(device)
     model = model.eval()

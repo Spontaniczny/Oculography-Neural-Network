@@ -75,6 +75,7 @@ def parse_arguments() -> argparse.Namespace:
         "smooth_l1", 
         "weighted_smooth_l1",
         "sin_smooth_l1",
+        "gaussian"
     ]
 
     parser.add_argument(
