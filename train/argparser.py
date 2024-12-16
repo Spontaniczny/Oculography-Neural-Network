@@ -2,7 +2,7 @@ import argparse
 from typing import Any
 import uuid
 
-def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
+def training_config(args: argparse.Namespace) -> dict[str, Any]:
     experiment_id = str(uuid.uuid4())
     nn_config = {
         "net_type": args.net_type,
@@ -14,57 +14,24 @@ def neural_network_config(args: argparse.Namespace) -> dict[str, Any]:
     }
     return nn_config
 
-def parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+def finetuning_config(args: argparse.Namespace) -> dict[str, Any]:
+    experiment_id = f"{str(uuid.uuid4())}_finetuning"
+    nn_config = {
+        "base_net_config": args.net_config_file,
+        "input_size": args.input_size,
+        "training_data": args.dataset,
+        "experiment_id": experiment_id
+    }
+    return nn_config
 
-    available_backbones = [
-        "res_net_50",
-        "res_net_34",
-        "res_net_18",
-        "xception",
-        "mobile_net_small",
-        "mobile_net_large"
-    ]
 
-    parser.add_argument(
-        "--net_type",
-        type=str,
-        choices=["segmentation", "regression"],
-        default="segmentation",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--backbone", 
-        type=str, choices=available_backbones, 
-        nargs="?",
-        default="res_net_50",
-        help="Backbone for segmentation net"
-    )
-
-    parser.add_argument(
-        "--input_size",
-        type=int,
-        default=128,
-        choices=[128, 256, 512],
-        required=True,
-        help="Size of input images (if smaller rescaling is applied)"
-    )
-
+def add_training_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--dataset",
         type=str,
         required=True,
         help="Path to directory with training data"
     )
-
-    parser.add_argument(
-        "--augment",
-        type=bool,
-        default=False,
-        help="Path to directory with training data"
-    )
-
 
     losses = [
         "dice", 
@@ -119,10 +86,69 @@ def parse_arguments() -> argparse.Namespace:
         help="Batch size during data loading"
     )
 
+    parser.add_argument(
+        "--input_size",
+        type=int,
+        default=128,
+        choices=[128, 256, 512],
+        required=True,
+        help="Size of input images (if smaller rescaling is applied)"
+    )
+
+def parse_finetuning_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--net_config_file",
+        type=str,
+        required=True
+    )
+
+    add_training_args(parser)
+    args = parser.parse_args()
+    return args
+
+
+def parse_training_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+
+    available_backbones = [
+        "res_net_50",
+        "res_net_34",
+        "res_net_18",
+        "xception",
+        "mobile_net_small",
+        "mobile_net_large"
+    ]
+
+    parser.add_argument(
+        "--net_type",
+        type=str,
+        choices=["segmentation", "regression"],
+        default="segmentation",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--backbone", 
+        type=str, choices=available_backbones, 
+        nargs="?",
+        default="res_net_50",
+        help="Backbone for segmentation net"
+    )
+
+    parser.add_argument(
+        "--augment",
+        type=bool,
+        default=False,
+        help="Path to directory with training data"
+    )
+
+    add_training_args(parser)
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    args = parse_training_args()
     print(args)

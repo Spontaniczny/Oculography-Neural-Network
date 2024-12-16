@@ -11,7 +11,7 @@ class DSCLoss(nn.Module):
         
         super().__init__()
         self.sigmoid = nn.Sigmoid() if logits else lambda x: x
-        self.eps = 1e-8
+        self.eps = 1e-15
 
     def forward(self, pred: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         pred = self.sigmoid(pred)
@@ -32,7 +32,7 @@ class IoULoss(nn.Module):
         
         super().__init__()
         self.sigmoid = nn.Sigmoid() if logits else lambda x: x
-        self.eps = 1e-8
+        self.eps = 1e-15
 
     def forward(self, pred: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         pred = self.sigmoid(pred)
@@ -53,7 +53,7 @@ class MCCLoss(nn.Module):
         
         super().__init__()
         self.sigmoid = nn.Sigmoid() if logits else lambda x: x
-        self.eps = 1e-8
+        self.eps = 1e-15
 
     def forward(self, pred: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         pred = self.sigmoid(pred)
