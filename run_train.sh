@@ -2,7 +2,7 @@ python -m train.init_training \
     --net_type segmentation \
     --backbone mobile_net_small \
     --input_size 256 \
-    --dataset datasets/rat_eye/^.*$ \
+    --dataset "datasets/rat_eye/.*" \
     --augment True \
     --loss_type dice \
     --optimizer AdamW \

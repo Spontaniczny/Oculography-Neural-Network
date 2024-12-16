@@ -12,7 +12,7 @@ def _convolutions(in_channels: int, out_channels: int, padding: int = 1) -> nn.S
         nn.ReLU(),
     )
 
-class U_NET(BaseNet):
+class U_NET(nn.Module):
     
     def __init__(
             self,
