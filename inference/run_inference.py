@@ -42,7 +42,7 @@ def load_dataloader(config: dict[str, Any], dataset: Optional[str] = None) -> Da
         dataset = config["training_data"]
     
     ds = load_dataset(dataset, config["input_size"], config["net_type"])
-    data_loader = DataLoader(ds, batch_size=16)
+    data_loader = DataLoader(ds, batch_size=128, shuffle=True)
     return data_loader
 
 
@@ -80,10 +80,10 @@ def save_results(input_batch: torch.Tensor, result_masks: torch.Tensor, save_fol
 
 
 def main():
-    config_path = "saved_models/deeplab/15:12:2024-20:34:55.json"
+    config_path = "saved_models/deeplab/16:12:2024-18:57:00.json"
     config = load_config_file(config_path)
     model = load_model(config, config_path)
-    dataset_path = "datasets/rat_eye/40"
+    dataset_path = "datasets/rat_eye/01"
 
     data_loader = load_dataloader(config, dataset_path)
     batch, _ = next(iter(data_loader))
@@ -92,9 +92,7 @@ def main():
     with torch.no_grad():
         out = model.predict_mask(batch)
     
-    # print(out)
-    # print(out.shape)
-    save_results(batch, out, "12")
+    save_results(batch, out, "16")
 
 
 if __name__ == "__main__":
