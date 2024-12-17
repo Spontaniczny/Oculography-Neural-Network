@@ -71,6 +71,13 @@ class TrainingLogger:
     def on_training_end(self):
         epochs = len(self.training_losses)
 
+        df = pd.DataFrame.from_dict({
+            "training_losses": self.training_losses,
+            "validation_losses": self.validation_losses
+        })
+        table = wandb.Table(dataframe=df)
+        wandb.log({"(Train/Val)_loss": table})
+
         plt.xticks(range(epochs))
         plt.plot(self.training_losses, color='red', label="Training loss")
         plt.plot(self.validation_losses, color='blue', label="Validation loss")
