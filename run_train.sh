@@ -1,10 +1,10 @@
 python -m train.init_training \
     --net_type segmentation \
     --backbone mobile_net_small \
-    --input_size 128 \
-    --dataset datasets/rat_eye/^.*$ \
-    --augment False \
-    --loss_type iou \
+    --input_size 256 \
+    --dataset "datasets/rat_eye/.*" \
+    --augment True \
+    --loss_type dice \
     --optimizer AdamW \
     --patience 10 \
     --max_epochs 100 \

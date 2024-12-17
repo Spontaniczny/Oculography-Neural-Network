@@ -3,8 +3,15 @@ import torch.nn as nn
 import torch.optim
 from typing import Callable
 from losses.segmentation.losses import DSCLoss, IoULoss, MAE, MCCLoss, FocalLoss
-from losses.regression.losses import WeightedSmoothL1Loss, SineSmoothL1Loss
+from losses.regression.losses import WeightedSmoothL1Loss, SineSmoothL1Loss, GaussianLoss
 
+
+def choose_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 def get_loss_function(loss_name: str, net_type: str) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     if net_type == "segmentation":
@@ -32,6 +39,8 @@ def get_loss_function(loss_name: str, net_type: str) -> Callable[[torch.Tensor, 
                 return WeightedSmoothL1Loss()
             case "sin_smooth_l1":
                 return SineSmoothL1Loss()
+            case "gaussian":
+                return GaussianLoss()
             case _:
                 raise ValueError(f"Provided loss function {loss_name} is not suitable for {net_type} net")
     else:

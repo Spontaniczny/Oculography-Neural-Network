@@ -1,1 +1,1 @@
-from .losses import WeightedSmoothL1Loss, SineSmoothL1Loss
+from .losses import WeightedSmoothL1Loss, SineSmoothL1Loss, GaussianLoss
