@@ -40,7 +40,7 @@ def save_results(input_batch: torch.Tensor, result_masks: torch.Tensor, save_fol
 
 
 def main():
-    config_path = "saved_models/deeplab/17:12:2024-00:52:06_finetuning.json"
+    config_path = "saved_models/ellipsenet/17:12:2024-14:42:43_finetuning.json"
     config = load_config_file(config_path)
 
     model = load_model(config, config_path)
@@ -53,7 +53,7 @@ def main():
     with torch.no_grad():
         out = model.predict_mask(batch)
     
-    save_results(batch, out, "2")
+    save_results(batch, out, "3")
 
 
 if __name__ == "__main__":

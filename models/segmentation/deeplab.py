@@ -71,8 +71,8 @@ class DeepLab(BaseNet):
 
     def __init__(
             self, 
-            backbone: str = "res_net_50",
-            input_size: int = 128
+            backbone: str,
+            input_size: int
         ):
         super().__init__()
         self.backbone = init_backbone(backbone)

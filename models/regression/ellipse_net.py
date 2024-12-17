@@ -6,9 +6,8 @@ from ellipse import Ellipse
 
 class EllipseNet(BaseNet):
     def __init__(self, 
-        
+        backbone: str,
         input_size: int,
-        backbone: str = "res_net_18",
         channel_reduction: int = 64
     ):
 
@@ -17,35 +16,36 @@ class EllipseNet(BaseNet):
         self.input_size = input_size
         self.backbone = init_backbone(backbone)
 
-        self.conv = nn.Conv2d(
-            in_channels=self.backbone.output_channels, 
-            out_channels=channel_reduction,
-            kernel_size=1
+
+        self.channel_reduce = nn.Sequential(
+            nn.Conv2d(
+                in_channels=self.backbone.output_channels, 
+                out_channels=channel_reduction,
+                kernel_size=1
+            ),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+
         )
 
-        backbone_out_size = (input_size // self.backbone.output_stride) ** 2
-
-        self.flatten = nn.Flatten()
-        self.linear1 = nn.Linear(channel_reduction*backbone_out_size, 1024)
-        self.linear2 = nn.Linear(1024, 512)
-        self.linear3 = nn.Linear(512, 5)
-        
+        backbone_out_size = (input_size // self.backbone.output_stride) ** 2 // 4
 
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
+        self.mlp = nn.Sequential(
+            nn.Flatten(),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.Linear(channel_reduction*backbone_out_size // 2, 1024),
+            self.dropout,
+            self.relu,
+            nn.Linear(1024, 512),
+            self.relu,
+            nn.Linear(512, 5)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.backbone(x)
-        x = self.conv(x)
-        x = self.flatten(x)
-
-        x = self.linear1(x)
-        x = self.dropout(x)
-        x = self.relu(x)
-
-        x = self.linear2(x)
-        x = self.relu(x)
-        x = self.linear3(x)
+        x = self.channel_reduce(x)
+        x = self.mlp(x)
         return x
     
     def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:

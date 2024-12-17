@@ -130,4 +130,4 @@ class AlignedXception(Backbone):
         return self._output_stride
     
 def create_xception() -> Backbone:
-    return AlignedXception(middle_blocks=8)
+    return AlignedXception(middle_blocks=16)
