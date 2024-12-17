@@ -1,6 +1,7 @@
 import os
 import re
 import pandas as pd
+import torch
 from typing import Type, Optional
 from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
 from .datasets import SegmentationDataset, RegressionDataset, SegmentationAugmented, RegressionAugmented
@@ -115,9 +116,8 @@ def prepare_dataloaders(
         
     ) -> tuple[DataLoader, DataLoader, DataLoader]:
 
-    train_set, val_set, test_set = random_split(dataset, split_ratio)
+    train_set, val_set, test_set = random_split(dataset, split_ratio, generator=torch.manual_seed(42))
 
-    print(dataset_type)
     if augment:
         if dataset_type == "regression":
             train_set = RegressionAugmented(train_set)

@@ -9,7 +9,6 @@ class BaseNet(nn.Module, ABC):
 
     def __init__(self):
         super().__init__()
-
         self.saving_folder = "tmp"
         self.saved_weights = None
     
@@ -26,7 +25,7 @@ class BaseNet(nn.Module, ABC):
         else:
             print("No cached weights found")
 
-    def save_model(self, nn_config: dict):
+    def save_model(self, nn_config: dict, finetuning: bool = False):
         self.to("cpu")
 
         class_name = str.lower(self.__class__.__name__)
@@ -36,12 +35,30 @@ class BaseNet(nn.Module, ABC):
             os.mkdir(saving_path)
 
         experiment_id = nn_config['experiment_id']
+        suffix = "_finetuning" if finetuning else "" 
         now = datetime.datetime.now()
-        with open(f"{saving_path}/{now.strftime("%d:%m:%Y-%H:%M:%S")}.json", "w") as outfile: 
-            json.dump(nn_config, outfile)
+        with open(f"{saving_path}/{now.strftime("%d:%m:%Y-%H:%M:%S")}{suffix}.json", "w") as outfile: 
+            json.dump(nn_config, outfile, indent=4)
 
         torch.save(self.state_dict(), f"{saving_path}/{experiment_id}.pt")
 
+
+    def freeze_backbone(self):
+        """Freezes the backbone weights. Assumes 'backbone' exists in child classes."""
+        if hasattr(self, 'backbone') and isinstance(self.backbone, nn.Module):
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+        else:
+            raise AttributeError("Child class must define 'self.backbone' as an nn.Module.")
+        
+    def get_trainable_params(self):
+        trainable_params = []
+        for param in self.parameters():
+            if param.requires_grad:
+                trainable_params.append(param)
+
+        return trainable_params
+        
     @abstractmethod
     def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
         pass

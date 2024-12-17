@@ -7,6 +7,7 @@ datasets/*
 saved_models/*
 tmp/*
 results/*
+extracted_frames/*
 !*.gitkeep
 *.egg-info
 NN_human_mouse_eyes

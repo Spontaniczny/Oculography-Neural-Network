@@ -1,49 +1,9 @@
-import json
 import os
 import torch
 import torchvision.transforms.v2 as v2
-from typing import Any, Optional
-from torch.utils.data import DataLoader
-from data_utils import load_dataset
-from models.segmentation import DeepLab
-from models.regression import EllipseNet
-from models import BaseNet
 from PIL import Image
 import numpy as np
-
-
-def load_config_file(config_path: str) -> dict[str, Any]:
-    with open(config_path, "r") as f:
-        config = json.loads(f.read())
-
-    return config
-
-def load_model(config: dict[str, Any], config_path: str) -> BaseNet:
-    if config["net_type"] == "segmentation":
-        model = DeepLab(
-            backbone=config["backbone"],
-            input_size=config["input_size"]
-        )
-    else:
-        model = EllipseNet(
-            backbone=config["backbone"],
-            input_size=config["input_size"]
-        )
-
-    state_dict_path = "/".join(os.path.normpath(config_path).split("/")[:-1])
-    state_dict_path += f"/{config["experiment_id"]}.pt"
-    model.load_state_dict(torch.load(state_dict_path, weights_only=True))
-
-    return model
-
-
-def load_dataloader(config: dict[str, Any], dataset: Optional[str] = None) -> DataLoader:
-    if dataset is None:
-        dataset = config["training_data"]
-    
-    ds = load_dataset(dataset, config["input_size"], config["net_type"])
-    data_loader = DataLoader(ds, batch_size=16)
-    return data_loader
+from .model_loading import load_dataloader, load_config_file, load_model
 
 
 def apply_mask_on_original(original_rgba: Image.Image, mask: np.ndarray) -> Image.Image:
@@ -80,21 +40,20 @@ def save_results(input_batch: torch.Tensor, result_masks: torch.Tensor, save_fol
 
 
 def main():
-    config_path = "saved_models/deeplab/15:12:2024-20:34:55.json"
+    config_path = "saved_models/deeplab/17:12:2024-00:52:06_finetuning.json"
     config = load_config_file(config_path)
-    model = load_model(config, config_path)
-    dataset_path = "datasets/rat_eye/40"
 
+    model = load_model(config, config_path)
+    dataset_path = "datasets/rat_eye/01|02"
     data_loader = load_dataloader(config, dataset_path)
+
     batch, _ = next(iter(data_loader))
 
     model.eval()
     with torch.no_grad():
         out = model.predict_mask(batch)
     
-    # print(out)
-    # print(out.shape)
-    save_results(batch, out, "12")
+    save_results(batch, out, "2")
 
 
 if __name__ == "__main__":

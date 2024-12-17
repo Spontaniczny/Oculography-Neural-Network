@@ -1,12 +1,10 @@
-import torch
 from models.segmentation import DeepLab
 from models.regression import EllipseNet
 from .training import train
-from .helper_functions import get_loss_function, get_core_optimizer
-import torch.optim
+from .helper_functions import get_loss_function, get_core_optimizer, choose_device
 
 from data_utils import load_dataset, prepare_dataloaders
-from .argparser import parse_arguments, neural_network_config
+from .argparser import parse_training_args, training_config
 
 from evaluation.segmentation import compute_loss_metrics, binary_metrics, plot_precision_recall, plot_roc
 from evaluation.regression import regression_evaluation_metrics
@@ -15,29 +13,21 @@ from callbacks import TrainingLogger
 from datetime import datetime
 
 
-def choose_device():
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
-
-
 def main():
 
     # Parsing command line arguments
-    args = parse_arguments()
+    args = parse_training_args()
     
     logger = TrainingLogger(
         project_name="rat_eye", 
         run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
-        config=vars(args)
+        config=vars(args) | {"finetuning" : "no"}
     )
 
     # Preparing dataset and train, validation and test data_loaders
     ds = load_dataset(args.dataset, input_size=args.input_size, dataset_type=args.net_type)
     train_loader, val_loader, test_loader = prepare_dataloaders(
-        ds, [0.4, 0.3, 0.3], args.net_type, batch_size=args.batch_size, augment=args.augment
+        ds, [0.6, 0.2, 0.2], args.net_type, batch_size=args.batch_size, augment=args.augment
     )
 
     # Preparing net and moving it to the correct device
@@ -58,7 +48,7 @@ def main():
     optimizer = get_core_optimizer(args.optimizer)(net.parameters())
     print(f"Using {args.optimizer} optimizer")
 
-    nn_config = neural_network_config(args)
+    nn_config = training_config(args)
     print(f"Neural network config: {nn_config}")
 
     net = train(
