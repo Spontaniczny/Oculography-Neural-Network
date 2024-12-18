@@ -147,7 +147,7 @@ class MediaEditor(MediaEditorGUI):
         else:
             self.drawing_mode = 'points'
             self.fit_ellipse_button.setEnabled(True)
-        self.ellipse_manager.reset()
+            self.ellipse_manager.reset()
         self.update_video_display()
 
     def fit_ellipse(self):
