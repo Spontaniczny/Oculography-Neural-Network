@@ -2,17 +2,21 @@ import numpy as np
 import cv2
 import math
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QColor, QPen
-from PyQt5.QtCore import Qt, QPoint, QRectF
+from PyQt5.QtCore import Qt, QPoint, QRectF, QPointF
 
 class EllipseManager:
     def __init__(self):
         self.reset()
         self.frame_height = None
         self.frame_width = None
+        self.ellipse_alpha = 127  # Default alpha
 
     def set_frame_size(self, frame_width, frame_height):
         self.frame_width = frame_width
         self.frame_height = frame_height
+
+    def set_alpha(self, alpha_value):
+        self.ellipse_alpha = alpha_value
 
     def reset(self):
         self.ellipse_center = None
@@ -95,6 +99,65 @@ class EllipseManager:
         painter.end()
         return pixmap
 
+    def get_frame_pixmap(self, frame):
+        # Convert just the frame to a QPixmap without drawing the ellipse or points
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        height, width, _ = frame_rgb.shape
+        qimage = QImage(frame_rgb.data, width, height, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(qimage)
+        return pixmap
+
+    def draw_overlay_on_pixmap(self, pixmap, scale_x, scale_y, drawing_mode):
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        if drawing_mode == 'ellipse' and self.ellipse_center and self.ellipse_size and sum(self.ellipse_size) > 1:
+            disp_cx = self.ellipse_center[0] / scale_x
+            disp_cy = self.ellipse_center[1] / scale_y
+            disp_axes_x = self.ellipse_size[0] / scale_x
+            disp_axes_y = self.ellipse_size[1] / scale_y
+
+            painter.setBrush(QColor(255, 255, 255, self.ellipse_alpha))
+            painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
+            rect = QRectF(disp_cx - disp_axes_x, disp_cy - disp_axes_y, 2 * disp_axes_x, 2 * disp_axes_y)
+            painter.save()
+            painter.translate(disp_cx, disp_cy)
+            painter.rotate(self.ellipse_angle)
+            painter.translate(-disp_cx, -disp_cy)
+            painter.drawEllipse(rect)
+            painter.restore()
+
+            # Draw control points
+            self.draw_control_points_on_scaled(painter, scale_x, scale_y)
+
+        elif drawing_mode == 'points':
+            # Draw points in scaled coordinates
+            painter.setBrush(QColor(255, 0, 0, 255))
+            painter.setPen(QPen(QColor(255, 0, 0, 255), 2))
+            for p in self.drawing_points:
+                disp_x = p[0] / scale_x
+                disp_y = p[1] / scale_y
+                painter.drawEllipse(QPointF(disp_x, disp_y), 3, 3)
+
+            if self.ellipse_center and self.ellipse_size and sum(self.ellipse_size) > 1:
+                disp_cx = self.ellipse_center[0] / scale_x
+                disp_cy = self.ellipse_center[1] / scale_y
+                disp_axes_x = self.ellipse_size[0] / scale_x
+                disp_axes_y = self.ellipse_size[1] / scale_y
+
+                painter.setBrush(Qt.NoBrush)
+                painter.setPen(QPen(QColor(0, 255, 0, 255), 2))
+                rect = QRectF(disp_cx - disp_axes_x, disp_cy - disp_axes_y, 2 * disp_axes_x, 2 * disp_axes_y)
+                painter.save()
+                painter.translate(disp_cx, disp_cy)
+                painter.rotate(self.ellipse_angle)
+                painter.translate(-disp_cx, -disp_cy)
+                painter.drawEllipse(rect)
+                painter.restore()
+
+        painter.end()
+        return pixmap
+
     def draw_control_points(self, painter):
         self.control_points = self.calculate_corner_control_points()
         painter.setBrush(QColor(0, 0, 255, 255))
@@ -103,6 +166,26 @@ class EllipseManager:
         if self.rotation_handle:
             painter.setBrush(QColor(255, 0, 0, 255))
             painter.drawEllipse(QPoint(int(self.rotation_handle[0]), int(self.rotation_handle[1])), 7, 7)
+
+    def draw_control_points_on_scaled(self, painter, scale_x, scale_y):
+        if not self.ellipse_center or not self.ellipse_size:
+            return
+        corners = self.calculate_corner_control_points()
+        cx, cy = self.ellipse_center
+
+        # Scale and rotate corners for drawing
+        painter.setBrush(QColor(0, 0, 255, 255))
+        painter.setPen(Qt.NoPen)
+        for p in corners:
+            disp_x = p[0] / scale_x
+            disp_y = p[1] / scale_y
+            painter.drawEllipse(QPointF(disp_x, disp_y), 5, 5)
+
+        if self.rotation_handle:
+            disp_rx = self.rotation_handle[0] / scale_x
+            disp_ry = self.rotation_handle[1] / scale_y
+            painter.setBrush(QColor(255, 0, 0, 255))
+            painter.drawEllipse(QPointF(disp_rx, disp_ry), 7, 7)
 
     def calculate_corner_control_points(self):
         if not self.ellipse_center or not self.ellipse_size:
@@ -115,11 +198,19 @@ class EllipseManager:
                    (cx + axes_x, cy + axes_y)]
         rotated_corners = [self.rotate_point(p, (cx, cy), self.ellipse_angle) for p in corners]
         top_center = (cx, cy - axes_y)
-        rotation_handle = (top_center[0], top_center[1] - 50)
-        self.rotation_handle = self.rotate_point(rotation_handle, (cx, cy), self.ellipse_angle)
+        self.rotation_handle = self.rotate_point((top_center[0], top_center[1] - 50), (cx, cy), self.ellipse_angle)
         return rotated_corners
 
     def rotate_point(self, point, center, angle):
+        px, py = point
+        cx, cy = center
+        angle_rad = math.radians(angle)
+        qx = cx + math.cos(angle_rad) * (px - cx) - math.sin(angle_rad) * (py - cy)
+        qy = cy + math.sin(angle_rad) * (px - cx) + math.cos(angle_rad) * (py - cy)
+        return qx, qy
+
+    def rotate_point_displayed(self, point, center, angle):
+        # Rotate a point in display coords
         px, py = point
         cx, cy = center
         angle_rad = math.radians(angle)
@@ -131,28 +222,42 @@ class EllipseManager:
         return self.rotate_point(point, center, -angle)
 
     def mousePressEvent(self, event, label_pos, drawing_mode):
-        pos = event.pos() - label_pos
+        pos = event.pos() - label_pos  # pos is now in original coordinates if you've fixed scaling in media_editor
+
+        # Recalculate control_points and rotation_handle before checking for hits
+        if self.ellipse_center and self.ellipse_size and sum(self.ellipse_size) > 1:
+            self.control_points = self.calculate_corner_control_points()
+            # calculate_corner_control_points sets self.rotation_handle too
+
         if drawing_mode == 'ellipse':
-            if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(pos.y() - self.rotation_handle[1]) < 10:
+            # Check if user clicked rotation handle
+            if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(
+                    pos.y() - self.rotation_handle[1]) < 10:
                 self.is_rotating = True
                 self.start_point = pos
                 self.initial_angle = math.degrees(math.atan2(self.start_point.y() - self.ellipse_center[1],
                                                              self.start_point.x() - self.ellipse_center[0]))
                 return
+
+            # Check if user clicked on a control point
             for idx, point in enumerate(self.control_points):
                 if abs(pos.x() - point[0]) < 10 and abs(pos.y() - point[1]) < 10:
                     self.is_dragging_point = True
                     self.dragged_point_idx = idx
                     return
+
+            # Check if user clicked inside ellipse to drag
             if self.ellipse_center and self.is_point_inside_ellipse(pos):
                 self.is_dragging_ellipse = True
                 self.start_point = pos
             elif event.button() == Qt.LeftButton:
+                # Start drawing a new ellipse
                 self.start_point = pos
                 self.is_drawing = True
         elif drawing_mode == 'points':
             if event.button() == Qt.LeftButton:
                 self.drawing_points.append((pos.x(), pos.y()))
+
 
     def mouseMoveEvent(self, event, label_pos, drawing_mode):
         pos = event.pos() - label_pos
@@ -276,7 +381,7 @@ class EllipseManager:
         cx, cy = self.ellipse_center
         axes_x, axes_y = self.ellipse_size
         if not axes_x or not axes_y:
-            return True
+            return False
         rel_x, rel_y = self.rotate_point((point.x(), point.y()), (cx, cy), -self.ellipse_angle)
         rel_x, rel_y = rel_x - cx, rel_y - cy
         return (rel_x ** 2) / (axes_x ** 2) + (rel_y ** 2) / (axes_y ** 2) <= 1
