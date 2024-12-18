@@ -19,7 +19,7 @@ class VideoFrameExtractor(QWidget):
         # Variables for video
         self.video_path = None
         self.total_frames = 0
-        self.fps = 0
+        self.fps = 0.0
         self.start_frame = 0
         self.end_frame = 0
         self.current_frame_index = 0
@@ -29,25 +29,21 @@ class VideoFrameExtractor(QWidget):
         self.playing = False
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateFrame)
-        self.playback_speed_ms = 30  # ~30 fps simulation
+        self.playback_speed_ms = 30  # Will adjust after video load
 
         # UI elements
         self.videoLabel = QLabel("No video loaded.")
         self.videoLabel.setAlignment(Qt.AlignCenter)
         self.videoLabel.setStyleSheet("border: 1px solid black; background-color: #222;")
-        # Set a fixed size for stable video display area
+        # Fixed size for stable video display area
         self.videoLabel.setFixedSize(640, 360)
 
         self.loadButton = QPushButton("Load Video")
         self.loadButton.clicked.connect(self.loadVideo)
 
-        self.playButton = QPushButton("Play")
-        self.playButton.setEnabled(False)
-        self.playButton.clicked.connect(self.playVideo)
-
-        self.pauseButton = QPushButton("Pause")
-        self.pauseButton.setEnabled(False)
-        self.pauseButton.clicked.connect(self.pauseVideo)
+        self.playPauseButton = QPushButton("Play")
+        self.playPauseButton.setEnabled(False)
+        self.playPauseButton.clicked.connect(self.togglePlayPause)
 
         self.stopButton = QPushButton("Stop")
         self.stopButton.setEnabled(False)
@@ -58,26 +54,50 @@ class VideoFrameExtractor(QWidget):
         self.positionSlider.setEnabled(False)
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
+        # Buttons to set start/end based on current frame
+        self.setStartButton = QPushButton("Set Start From Video Position")
+        self.setStartButton.setEnabled(False)
+        self.setStartButton.clicked.connect(self.setStartToCurrentFrame)
+        self.setEndButton = QPushButton("Set End From Video Position")
+        self.setEndButton.setEnabled(False)
+        self.setEndButton.clicked.connect(self.setEndToCurrentFrame)
+
         # Start and end sliders
         self.startSlider = QSlider(Qt.Horizontal)
         self.endSlider = QSlider(Qt.Horizontal)
         self.startSlider.setEnabled(False)
         self.endSlider.setEnabled(False)
-        self.startSlider.valueChanged.connect(self.updateRangeAndExtractionInfo)
-        self.endSlider.valueChanged.connect(self.updateRangeAndExtractionInfo)
+        self.startSlider.valueChanged.connect(self.syncStartEnd)
+        self.endSlider.valueChanged.connect(self.syncStartEnd)
 
-        # Buttons to set start/end based on current frame
-        self.setStartButton = QPushButton("Set Start")
-        self.setStartButton.setEnabled(False)
-        self.setStartButton.clicked.connect(self.setStartToCurrentFrame)
-        self.setEndButton = QPushButton("Set End")
-        self.setEndButton.setEnabled(False)
-        self.setEndButton.clicked.connect(self.setEndToCurrentFrame)
+        # Spinboxes for manually setting start/end frames
+        self.startFrameSpinBox = QSpinBox()
+        self.startFrameSpinBox.setMinimum(0)
+        self.startFrameSpinBox.valueChanged.connect(self.spinboxChanged)
+        self.endFrameSpinBox = QSpinBox()
+        self.endFrameSpinBox.setMinimum(0)
+        self.endFrameSpinBox.valueChanged.connect(self.spinboxChanged)
+
+        frameSelectionLayout = QHBoxLayout()
+        frameSelectionLayout.addWidget(QLabel("Start Frame:"))
+        frameSelectionLayout.addWidget(self.startFrameSpinBox)
+        frameSelectionLayout.addWidget(QLabel("End Frame:"))
+        frameSelectionLayout.addWidget(self.endFrameSpinBox)
+
+        startEndLayout = QHBoxLayout()
+        startEndLayout.addWidget(self.setStartButton)
+        startEndLayout.addWidget(self.setEndButton)
+
+        rangeLayout = QFormLayout()
+        rangeLayout.addRow("Start Slider:", self.startSlider)
+        rangeLayout.addRow("End Slider:", self.endSlider)
+        rangeLayout.addRow("", frameSelectionLayout)
+        rangeLayout.addRow("", startEndLayout)
 
         # Extraction parameters
         self.frameCountSpinBox = QSpinBox()
         self.frameCountSpinBox.setMinimum(1)
-        self.frameCountSpinBox.setValue(10)
+        # Maximum will be set after video load
         self.frameCountSpinBox.valueChanged.connect(self.updateRangeAndExtractionInfo)
 
         self.percentageSpinBox = QSpinBox()
@@ -94,16 +114,6 @@ class VideoFrameExtractor(QWidget):
         self.frameHeightEdit.setValidator(QIntValidator(1, 10000))
         self.frameHeightEdit.textChanged.connect(self.updateRangeAndExtractionInfo)
 
-        # Radio buttons for extraction mode
-        self.evenRadio = QRadioButton("Evenly spaced frames")
-        self.normalRadio = QRadioButton("Normal distribution")
-        self.evenRadio.setChecked(True)
-        self.distributionGroup = QButtonGroup()
-        self.distributionGroup.addButton(self.evenRadio)
-        self.distributionGroup.addButton(self.normalRadio)
-        self.evenRadio.toggled.connect(self.updateRangeAndExtractionInfo)
-        self.normalRadio.toggled.connect(self.updateRangeAndExtractionInfo)
-
         # Radio buttons for selection method (count or percentage)
         self.byCountRadio = QRadioButton("By count")
         self.byCountRadio.setChecked(True)
@@ -119,6 +129,10 @@ class VideoFrameExtractor(QWidget):
         self.rangeInfoLabel = QLabel("Start: 0, End: 0, Frames in Range: 0")
         self.extractionInfoLabel = QLabel("Frames to extract: 0")
 
+        # Time and frame info label
+        self.timeFrameInfoLabel = QLabel("Time: 0.00 s, Frame: 0")
+        self.timeFrameInfoLabel.setAlignment(Qt.AlignCenter)
+
         # Extract button
         self.extractButton = QPushButton("Extract Frames")
         self.extractButton.setEnabled(False)
@@ -131,34 +145,19 @@ class VideoFrameExtractor(QWidget):
         self.extractionProgressLabel = QLabel("")
         self.extractionProgressLabel.setVisible(False)
 
-        # Layouts
         topLayout = QHBoxLayout()
         topLayout.addWidget(self.loadButton)
-        topLayout.addWidget(self.playButton)
-        topLayout.addWidget(self.pauseButton)
+        topLayout.addWidget(self.playPauseButton)
         topLayout.addWidget(self.stopButton)
 
         videoControlLayout = QHBoxLayout()
         videoControlLayout.addWidget(self.positionSlider)
-
-        startEndLayout = QHBoxLayout()
-        startEndLayout.addWidget(self.setStartButton)
-        startEndLayout.addWidget(self.setEndButton)
-
-        rangeLayout = QFormLayout()
-        rangeLayout.addRow("Start Frame:", self.startSlider)
-        rangeLayout.addRow("End Frame:", self.endSlider)
-        rangeLayout.addRow("", startEndLayout)
 
         selectionLayout = QHBoxLayout()
         selectionLayout.addWidget(self.byCountRadio)
         selectionLayout.addWidget(self.frameCountSpinBox)
         selectionLayout.addWidget(self.byPercentageRadio)
         selectionLayout.addWidget(self.percentageSpinBox)
-
-        distributionLayout = QHBoxLayout()
-        distributionLayout.addWidget(self.evenRadio)
-        distributionLayout.addWidget(self.normalRadio)
 
         sizeLayout = QHBoxLayout()
         sizeLayout.addWidget(QLabel("Width:"))
@@ -170,6 +169,9 @@ class VideoFrameExtractor(QWidget):
         progressLayout.addWidget(self.extractionProgressLabel)
         progressLayout.addWidget(self.extractionProgressBar)
 
+        # Mode label (only even distribution now)
+        extractionModeLabel = QLabel("Extraction Mode: Evenly spaced frames")
+
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(self.videoLabel)
         mainLayout.addLayout(topLayout)
@@ -178,9 +180,10 @@ class VideoFrameExtractor(QWidget):
         mainLayout.addWidget(self.rangeInfoLabel)
         mainLayout.addLayout(rangeLayout)
         mainLayout.addLayout(selectionLayout)
-        mainLayout.addLayout(distributionLayout)
+        mainLayout.addWidget(extractionModeLabel)
         mainLayout.addLayout(sizeLayout)
         mainLayout.addWidget(self.extractionInfoLabel)
+        mainLayout.addWidget(self.timeFrameInfoLabel)
         mainLayout.addWidget(self.extractButton)
         mainLayout.addLayout(progressLayout)
 
@@ -202,12 +205,24 @@ class VideoFrameExtractor(QWidget):
             if self.fps <= 0:
                 self.fps = 30.0  # fallback if fps is not available
 
+            # Adjust playback speed to original framerate
+            self.playback_speed_ms = int(1000 / self.fps)
+
             self.start_frame = 0
             self.end_frame = self.total_frames - 1
             self.startSlider.setMaximum(self.total_frames - 1)
             self.endSlider.setMaximum(self.total_frames - 1)
-            self.startSlider.setValue(0)
-            self.endSlider.setValue(self.total_frames - 1)
+            self.startSlider.setValue(self.start_frame)
+            self.endSlider.setValue(self.end_frame)
+
+            self.startFrameSpinBox.setMaximum(self.total_frames - 1)
+            self.endFrameSpinBox.setMaximum(self.total_frames - 1)
+            self.startFrameSpinBox.setValue(self.start_frame)
+            self.endFrameSpinBox.setValue(self.end_frame)
+
+            # Set max frames for count mode
+            self.frameCountSpinBox.setMaximum(self.total_frames)
+
             self.startSlider.setEnabled(True)
             self.endSlider.setEnabled(True)
             self.current_frame_index = 0
@@ -222,8 +237,7 @@ class VideoFrameExtractor(QWidget):
             self.infoLabel.setText(f"Loaded: {base_name}, Total Frames: {self.total_frames}, FPS: {self.fps:.2f}")
 
             # Enable playback controls
-            self.playButton.setEnabled(True)
-            self.pauseButton.setEnabled(True)
+            self.playPauseButton.setEnabled(True)
             self.stopButton.setEnabled(True)
             self.extractButton.setEnabled(True)
 
@@ -246,7 +260,6 @@ class VideoFrameExtractor(QWidget):
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         ret, frame = self.cap.read()
         if ret:
-            # Convert to QImage
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
@@ -257,7 +270,7 @@ class VideoFrameExtractor(QWidget):
                                                  Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation))
         else:
-            # If no frame was retrieved, pause
+            # If no frame, pause
             self.pauseVideo()
 
         # Update position slider
@@ -265,22 +278,35 @@ class VideoFrameExtractor(QWidget):
         self.positionSlider.setValue(self.current_frame_index)
         self.positionSlider.blockSignals(False)
 
+        # Update time and frame info
+        current_time = self.current_frame_index / self.fps if self.fps > 0 else 0.0
+        self.timeFrameInfoLabel.setText(f"Time: {current_time:.2f} s, Frame: {self.current_frame_index}")
+
         if self.playing:
             self.current_frame_index += 1
+
+    def togglePlayPause(self):
+        if self.playing:
+            self.pauseVideo()
+        else:
+            self.playVideo()
 
     def playVideo(self):
         if not self.cap or not self.cap.isOpened():
             return
         self.playing = True
+        self.playPauseButton.setText("Pause")
         self.timer.start(self.playback_speed_ms)
 
     def pauseVideo(self):
         self.playing = False
+        self.playPauseButton.setText("Play")
         self.timer.stop()
 
     def stopVideo(self):
         self.playing = False
         self.timer.stop()
+        self.playPauseButton.setText("Play")
         self.current_frame_index = 0
         self.updateFrame()
 
@@ -289,23 +315,71 @@ class VideoFrameExtractor(QWidget):
         self.updateFrame()
 
     def setStartToCurrentFrame(self):
-        self.startSlider.setValue(self.current_frame_index)
+        self.startFrameSpinBox.setValue(self.current_frame_index)
 
     def setEndToCurrentFrame(self):
-        self.endSlider.setValue(self.current_frame_index)
+        self.endFrameSpinBox.setValue(self.current_frame_index)
+
+    def spinboxChanged(self):
+        # When spinboxes change, update sliders and range info
+        self.startSlider.blockSignals(True)
+        self.endSlider.blockSignals(True)
+
+        self.start_frame = self.startFrameSpinBox.value()
+        self.end_frame = self.endFrameSpinBox.value()
+
+        if self.end_frame < self.start_frame:
+            self.end_frame = self.start_frame
+            self.endFrameSpinBox.setValue(self.end_frame)
+
+        self.startSlider.setValue(self.start_frame)
+        self.endSlider.setValue(self.end_frame)
+
+        self.startSlider.blockSignals(False)
+        self.endSlider.blockSignals(False)
+
+        self.updateRangeAndExtractionInfo()
+
+    def syncStartEnd(self):
+        # When sliders change, update spinboxes and range info
+        self.start_frame = self.startSlider.value()
+        self.end_frame = self.endSlider.value()
+
+        if self.end_frame < self.start_frame:
+            self.end_frame = self.start_frame
+            self.endSlider.setValue(self.end_frame)
+
+        self.startFrameSpinBox.blockSignals(True)
+        self.endFrameSpinBox.blockSignals(True)
+        self.startFrameSpinBox.setValue(self.start_frame)
+        self.endFrameSpinBox.setValue(self.end_frame)
+        self.startFrameSpinBox.blockSignals(False)
+        self.endFrameSpinBox.blockSignals(False)
+
+        self.updateRangeAndExtractionInfo()
+
+    def formatTime(self, seconds):
+        # Format time in MM:SS.s (minutes, seconds with 2 decimal places)
+        m = int(seconds // 60)
+        s = seconds % 60
+        return f"{m}:{s:05.2f}"  # e.g. 1:23.45
 
     def updateRangeAndExtractionInfo(self):
         if self.video_path is None:
             return
 
-        self.start_frame = self.startSlider.value()
-        self.end_frame = self.endSlider.value()
-        if self.end_frame < self.start_frame:
-            self.end_frame = self.start_frame
-            self.endSlider.setValue(self.end_frame)
-
         frames_in_range = self.end_frame - self.start_frame + 1
-        self.rangeInfoLabel.setText(f"Start: {self.start_frame}, End: {self.end_frame}, Frames in Range: {frames_in_range}")
+        start_time = (self.start_frame / self.fps) if self.fps > 0 else 0.0
+        end_time = (self.end_frame / self.fps) if self.fps > 0 else 0.0
+
+        start_time_str = self.formatTime(start_time)
+        end_time_str = self.formatTime(end_time)
+
+        self.rangeInfoLabel.setText(
+            f"Start: {self.start_frame} ({start_time_str}), "
+            f"End: {self.end_frame} ({end_time_str}), "
+            f"Frames in Range: {frames_in_range}"
+        )
 
         # Determine how many frames to extract
         if frames_in_range > 0:
@@ -337,17 +411,8 @@ class VideoFrameExtractor(QWidget):
             percent = self.percentageSpinBox.value()
             num_extract = max(1, int(math.floor((percent / 100.0) * frames_in_range)))
 
-        even_dist = self.evenRadio.isChecked()
-
-        # Compute which frames to extract
-        if even_dist:
-            indices = np.linspace(start_f, end_f, num_extract, dtype=int)
-        else:
-            mid = (start_f + end_f) / 2.0
-            std_dev = (end_f - start_f) / 6.0
-            candidate = np.random.normal(loc=mid, scale=std_dev, size=num_extract)
-            candidate = np.clip(candidate, start_f, end_f)
-            indices = np.rint(candidate).astype(int)
+        # Evenly spaced
+        indices = np.linspace(start_f, end_f, num_extract, dtype=int)
 
         try:
             w = int(self.frameWidthEdit.text())
