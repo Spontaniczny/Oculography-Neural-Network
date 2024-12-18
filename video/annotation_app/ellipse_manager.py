@@ -223,10 +223,51 @@ class EllipseManager:
     def adjust_ellipse_from_drag(self, pos):
         if self.dragged_point_idx is None or not self.ellipse_center or not self.ellipse_size:
             return
-        unrotated_pos = self.inverse_rotate_point((pos.x(), pos.y()), self.ellipse_center, self.ellipse_angle)
-        cx, cy = self.ellipse_center
-        new_width = abs(unrotated_pos[0] - cx)
-        new_height = abs(unrotated_pos[1] - cy)
+
+        # Opposite corners map for the four corners:
+        # [top-left (0), top-right (1), bottom-left (2), bottom-right (3)]
+        opposite_idx_map = {0: 3, 1: 2, 2: 1, 3: 0}
+        opposite_idx = opposite_idx_map[self.dragged_point_idx]
+
+        # Get the current rotated corner points in global coordinates
+        current_corners = self.calculate_corner_control_points()
+        fixed_corner_global = current_corners[opposite_idx]
+        dragged_corner_global = (pos.x(), pos.y())
+
+        old_cx, old_cy = self.ellipse_center
+        angle = self.ellipse_angle
+
+        # To transform points into the ellipse's local space (no rotation, ellipse center at (0,0)):
+        # Steps to get local coords:
+        # 1. Inverse rotate the point around the old ellipse center by -angle.
+        # 2. Translate so that old ellipse center becomes (0,0).
+
+        def to_local(global_pt):
+            # First inverse rotate around old center, removing angle
+            inv_rot = self.inverse_rotate_point(global_pt, (old_cx, old_cy), angle)
+            # Now translate so that old_cx, old_cy is the origin
+            return (inv_rot[0] - old_cx, inv_rot[1] - old_cy)
+
+        fixed_corner_local = to_local(fixed_corner_global)
+        dragged_corner_local = to_local(dragged_corner_global)
+
+        # In local coordinates, determine the new ellipse center and size
+        new_local_cx = (fixed_corner_local[0] + dragged_corner_local[0]) / 2.0
+        new_local_cy = (fixed_corner_local[1] + dragged_corner_local[1]) / 2.0
+        new_width = abs(dragged_corner_local[0] - fixed_corner_local[0]) / 2.0
+        new_height = abs(dragged_corner_local[1] - fixed_corner_local[1]) / 2.0
+
+        # Now we have the new ellipse parameters in local coords.
+        # To go back to global coordinates:
+        # local = (x_local, y_local) is after removing old_cx, old_cy and inverse rotation.
+        # Reverse steps:
+        # 1. Translate local center back by old_cx, old_cy
+        lx = old_cx + new_local_cx
+        ly = old_cy + new_local_cy
+        # 2. Rotate this point around old center by +angle (the opposite of what we did to go local).
+        new_global_center = self.rotate_point((lx, ly), (old_cx, old_cy), angle)
+
+        self.ellipse_center = new_global_center
         self.ellipse_size = (new_width, new_height)
 
     def is_point_inside_ellipse(self, point):
