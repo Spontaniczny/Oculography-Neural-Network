@@ -6,7 +6,7 @@ import numpy as np
 
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QFileDialog, QLabel, QSlider, QSpinBox, QFormLayout, QMessageBox,
-                             QRadioButton, QButtonGroup, QLineEdit, QProgressBar)
+                             QRadioButton, QButtonGroup, QLineEdit, QProgressBar, QCheckBox)
 from PyQt5.QtCore import Qt, QDir, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QIntValidator
 
@@ -24,6 +24,8 @@ class VideoFrameExtractor(QWidget):
         self.end_frame = 0
         self.current_frame_index = 0
         self.cap = None
+        self.original_width = 0
+        self.original_height = 0
 
         # Variables for playback
         self.playing = False
@@ -91,13 +93,12 @@ class VideoFrameExtractor(QWidget):
         rangeLayout = QFormLayout()
         rangeLayout.addRow("Start Slider:", self.startSlider)
         rangeLayout.addRow("End Slider:", self.endSlider)
-        rangeLayout.addRow("", frameSelectionLayout)
         rangeLayout.addRow("", startEndLayout)
+        rangeLayout.addRow("", frameSelectionLayout)
 
         # Extraction parameters
         self.frameCountSpinBox = QSpinBox()
         self.frameCountSpinBox.setMinimum(1)
-        # Maximum will be set after video load
         self.frameCountSpinBox.valueChanged.connect(self.updateRangeAndExtractionInfo)
 
         self.percentageSpinBox = QSpinBox()
@@ -106,12 +107,19 @@ class VideoFrameExtractor(QWidget):
         self.percentageSpinBox.setValue(10)
         self.percentageSpinBox.valueChanged.connect(self.updateRangeAndExtractionInfo)
 
+        # Custom size checkbox
+        self.customSizeCheckBox = QCheckBox("Custom frame size")
+        self.customSizeCheckBox.setChecked(False)
+        self.customSizeCheckBox.stateChanged.connect(self.toggleCustomSize)
+
         self.frameWidthEdit = QLineEdit("300")
         self.frameWidthEdit.setValidator(QIntValidator(1, 10000))
+        self.frameWidthEdit.setEnabled(False)
         self.frameWidthEdit.textChanged.connect(self.updateRangeAndExtractionInfo)
 
         self.frameHeightEdit = QLineEdit("300")
         self.frameHeightEdit.setValidator(QIntValidator(1, 10000))
+        self.frameHeightEdit.setEnabled(False)
         self.frameHeightEdit.textChanged.connect(self.updateRangeAndExtractionInfo)
 
         # Radio buttons for selection method (count or percentage)
@@ -160,6 +168,7 @@ class VideoFrameExtractor(QWidget):
         selectionLayout.addWidget(self.percentageSpinBox)
 
         sizeLayout = QHBoxLayout()
+        sizeLayout.addWidget(self.customSizeCheckBox)
         sizeLayout.addWidget(QLabel("Width:"))
         sizeLayout.addWidget(self.frameWidthEdit)
         sizeLayout.addWidget(QLabel("Height:"))
@@ -169,7 +178,7 @@ class VideoFrameExtractor(QWidget):
         progressLayout.addWidget(self.extractionProgressLabel)
         progressLayout.addWidget(self.extractionProgressBar)
 
-        # Mode label (only even distribution now)
+        # Mode label (only even distribution)
         extractionModeLabel = QLabel("Extraction Mode: Evenly spaced frames")
 
         mainLayout = QVBoxLayout()
@@ -205,7 +214,6 @@ class VideoFrameExtractor(QWidget):
             if self.fps <= 0:
                 self.fps = 30.0  # fallback if fps is not available
 
-            # Adjust playback speed to original framerate
             self.playback_speed_ms = int(1000 / self.fps)
 
             self.start_frame = 0
@@ -233,10 +241,20 @@ class VideoFrameExtractor(QWidget):
             self.setStartButton.setEnabled(True)
             self.setEndButton.setEnabled(True)
 
-            base_name = os.path.basename(fileName)
-            self.infoLabel.setText(f"Loaded: {base_name}, Total Frames: {self.total_frames}, FPS: {self.fps:.2f}")
+            # Get original frame size
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, first_frame = self.cap.read()
+            if ret:
+                self.original_height, self.original_width, _ = first_frame.shape
+            else:
+                self.original_height, self.original_width = 0, 0
 
-            # Enable playback controls
+            base_name = os.path.basename(fileName)
+            self.infoLabel.setText(
+                f"Loaded: {base_name}, Total Frames: {self.total_frames}, FPS: {self.fps:.2f}, "
+                f"Original Size: {self.original_width}x{self.original_height}"
+            )
+
             self.playPauseButton.setEnabled(True)
             self.stopButton.setEnabled(True)
             self.extractButton.setEnabled(True)
@@ -270,7 +288,6 @@ class VideoFrameExtractor(QWidget):
                                                  Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation))
         else:
-            # If no frame, pause
             self.pauseVideo()
 
         # Update position slider
@@ -359,10 +376,15 @@ class VideoFrameExtractor(QWidget):
         self.updateRangeAndExtractionInfo()
 
     def formatTime(self, seconds):
-        # Format time in MM:SS.s (minutes, seconds with 2 decimal places)
         m = int(seconds // 60)
         s = seconds % 60
-        return f"{m}:{s:05.2f}"  # e.g. 1:23.45
+        return f"{m}:{s:05.2f}"
+
+    def toggleCustomSize(self):
+        custom = self.customSizeCheckBox.isChecked()
+        self.frameWidthEdit.setEnabled(custom)
+        self.frameHeightEdit.setEnabled(custom)
+        self.updateRangeAndExtractionInfo()
 
     def updateRangeAndExtractionInfo(self):
         if self.video_path is None:
@@ -414,14 +436,21 @@ class VideoFrameExtractor(QWidget):
         # Evenly spaced
         indices = np.linspace(start_f, end_f, num_extract, dtype=int)
 
-        try:
-            w = int(self.frameWidthEdit.text())
-            h = int(self.frameHeightEdit.text())
-            if w <= 0 or h <= 0:
-                raise ValueError
-        except ValueError:
-            QMessageBox.warning(self, "Warning", "Invalid frame width/height.")
-            return
+        # Determine size
+        custom = self.customSizeCheckBox.isChecked()
+        if custom:
+            try:
+                w = int(self.frameWidthEdit.text())
+                h = int(self.frameHeightEdit.text())
+                if w <= 0 or h <= 0:
+                    raise ValueError
+            except ValueError:
+                QMessageBox.warning(self, "Warning", "Invalid custom frame width/height.")
+                return
+        else:
+            # Use original video size
+            w = self.original_width
+            h = self.original_height
 
         ret = QMessageBox.question(self, "Confirm Extraction",
                                    f"Extract {len(indices)} frames out of {frames_in_range} frames in range?",
@@ -431,6 +460,7 @@ class VideoFrameExtractor(QWidget):
 
         # Create output directory
         out_dir = os.path.join(os.path.dirname(self.video_path), "extracted_frames")
+        out_dir = os.path.join(out_dir, os.path.splitext(os.path.basename(self.video_path))[0])
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
