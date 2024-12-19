@@ -45,6 +45,13 @@ class MediaEditorGUI(QMainWindow):
         self.alpha_slider.setValue(80)  # Default alpha
         self.alpha_label = QLabel("Ellipse Alpha:")
 
+        # New alpha slider for ellipse edge
+        self.edge_alpha_slider = QSlider(Qt.Horizontal)
+        self.edge_alpha_slider.setMinimum(0)
+        self.edge_alpha_slider.setMaximum(255)
+        self.edge_alpha_slider.setValue(255)  # Default full opacity
+        self.edge_alpha_label = QLabel("Ellipse Edge Alpha:")
+
         # Gamma slider
         self.gamma_label = QLabel("Gamma:")
         self.gamma_slider = QSlider(Qt.Horizontal)
@@ -85,6 +92,10 @@ class MediaEditorGUI(QMainWindow):
         alpha_layout.addWidget(self.alpha_label)
         alpha_layout.addWidget(self.alpha_slider)
 
+        edge_alpha_layout = QHBoxLayout()
+        edge_alpha_layout.addWidget(self.edge_alpha_label)
+        edge_alpha_layout.addWidget(self.edge_alpha_slider)
+
         gamma_layout = QHBoxLayout()
         gamma_layout.addWidget(self.gamma_label)
         gamma_layout.addWidget(self.gamma_slider)
@@ -100,6 +111,7 @@ class MediaEditorGUI(QMainWindow):
         layout.addLayout(load_buttons_layout)
         layout.addLayout(drawing_mode_layout)
         layout.addLayout(alpha_layout)
+        layout.addLayout(edge_alpha_layout)
         layout.addLayout(gamma_layout)
         layout.addLayout(contrast_layout)
         layout.addWidget(self.next_frame_checkbox)
