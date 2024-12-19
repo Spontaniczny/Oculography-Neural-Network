@@ -127,15 +127,33 @@ class MediaEditor(MediaEditorGUI):
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_manager.has_ellipse():
             data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'data')
-            self.data_manager.save_frame(
-                self.media_player.media_name,
-                self.current_frame_idx,
-                self.current_frame,
-                self.ellipse_manager.binary_mask,
-                self.ellipse_manager.get_ellipse_info(),
-                data_dir
-            )
-            print(f"Saved frame {self.current_frame_idx}")
+            os.makedirs(data_dir, exist_ok=True)
+
+            # Determine frame_name based on media type
+            if hasattr(self.media_player, 'image_names'):
+                # Using ImagePlayer
+                image_name = os.path.splitext(self.media_player.image_names[self.current_frame_idx])[0]
+                self.data_manager.save_image(
+                    image_name,
+                    self.current_frame,
+                    self.ellipse_manager.binary_mask,
+                    self.ellipse_manager.get_ellipse_info(),
+                    data_dir
+                )
+                print(f"Saved image {image_name}")
+            else:
+                # Using VideoPlayer
+                self.data_manager.save_frame(
+                    self.media_player.media_name,
+                    self.current_frame_idx,
+                    self.current_frame,
+                    self.ellipse_manager.binary_mask,
+                    self.ellipse_manager.get_ellipse_info(),
+                    data_dir
+                )
+                print(f"Saved frame {self.media_player.media_name}_frame_{self.current_frame_idx}")
+
+
 
     def go_to_frame(self):
         frame_num = int(self.frame_input.text())
