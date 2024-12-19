@@ -9,7 +9,8 @@ class EllipseManager:
         self.reset()
         self.frame_height = None
         self.frame_width = None
-        self.ellipse_alpha = 127
+        self.ellipse_alpha = 70
+        self.edge_alpha = 255
         self.scale_x = 1.0
         self.scale_y = 1.0  # Default scale factors
 
@@ -19,6 +20,9 @@ class EllipseManager:
 
     def set_alpha(self, alpha_value):
         self.ellipse_alpha = alpha_value
+
+    def set_edge_alpha(self, alpha_value):
+        self.edge_alpha = alpha_value
 
     def set_scale_factors(self, scale_x, scale_y):
         self.scale_x = scale_x
@@ -124,7 +128,7 @@ class EllipseManager:
             disp_axes_y = self.ellipse_size[1] / scale_y
 
             painter.setBrush(QColor(255, 255, 255, self.ellipse_alpha))
-            painter.setPen(QPen(QColor(255, 255, 255, 255), 2))
+            painter.setPen(QPen(QColor(255, 255, 255, self.edge_alpha), 2))
             rect = QRectF(disp_cx - disp_axes_x, disp_cy - disp_axes_y, 2 * disp_axes_x, 2 * disp_axes_y)
             painter.save()
             painter.translate(disp_cx, disp_cy)
@@ -152,7 +156,7 @@ class EllipseManager:
                 disp_axes_y = self.ellipse_size[1] / scale_y
 
                 painter.setBrush(Qt.NoBrush)
-                painter.setPen(QPen(QColor(0, 255, 0, 255), 2))
+                painter.setPen(QPen(QColor(0, 255, 0, self.edge_alpha), 2))
                 rect = QRectF(disp_cx - disp_axes_x, disp_cy - disp_axes_y, 2 * disp_axes_x, 2 * disp_axes_y)
                 painter.save()
                 painter.translate(disp_cx, disp_cy)

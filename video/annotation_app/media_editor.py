@@ -29,9 +29,6 @@ class MediaEditor(MediaEditorGUI):
         self.setMouseTracking(True)
         self.video_label.setMouseTracking(True)
 
-        self.gamma_slider.valueChanged.connect(self.update_video_display)
-        self.contrast_slider.valueChanged.connect(self.update_video_display)
-
         # Drawing mode: 'ellipse' or 'points'
         self.drawing_mode = 'ellipse'
 
@@ -48,7 +45,10 @@ class MediaEditor(MediaEditorGUI):
         self.fit_ellipse_button.clicked.connect(self.fit_ellipse)
 
         # Connect alpha slider to update ellipse alpha
-        self.alpha_slider.valueChanged.connect(self.update_ellipse_alpha)
+        self.alpha_slider.valueChanged.connect(self.update_video_display)
+        self.edge_alpha_slider.valueChanged.connect(self.update_video_display)
+        self.gamma_slider.valueChanged.connect(self.update_video_display)
+        self.contrast_slider.valueChanged.connect(self.update_video_display)
 
     def update_ellipse_alpha(self, value):
         self.ellipse_manager.set_alpha(value)
@@ -121,6 +121,9 @@ class MediaEditor(MediaEditorGUI):
 
         # Set scale factors in ellipse manager
         self.ellipse_manager.set_scale_factors(self.scale_x, self.scale_y)
+
+        self.ellipse_manager.set_alpha(self.alpha_slider.value())
+        self.ellipse_manager.set_edge_alpha(self.edge_alpha_slider.value())
 
         final_pixmap = self.ellipse_manager.draw_overlay_on_pixmap(scaled_pixmap, self.scale_x, self.scale_y,
                                                                    self.drawing_mode)
