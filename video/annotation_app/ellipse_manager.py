@@ -9,7 +9,9 @@ class EllipseManager:
         self.reset()
         self.frame_height = None
         self.frame_width = None
-        self.ellipse_alpha = 127  # Default alpha
+        self.ellipse_alpha = 127
+        self.scale_x = 1.0
+        self.scale_y = 1.0  # Default scale factors
 
     def set_frame_size(self, frame_width, frame_height):
         self.frame_width = frame_width
@@ -17,6 +19,10 @@ class EllipseManager:
 
     def set_alpha(self, alpha_value):
         self.ellipse_alpha = alpha_value
+
+    def set_scale_factors(self, scale_x, scale_y):
+        self.scale_x = scale_x
+        self.scale_y = scale_y
 
     def reset(self):
         self.ellipse_center = None
@@ -222,31 +228,37 @@ class EllipseManager:
         return self.rotate_point(point, center, -angle)
 
     def mousePressEvent(self, event, label_pos, drawing_mode):
-        pos = event.pos() - label_pos  # pos is now in original coordinates if you've fixed scaling in media_editor
+        # pos is original coords
+        pos = event.pos() - label_pos
 
-        # Recalculate control_points and rotation_handle before checking for hits
+        # Recalculate control points and rotation handle:
         if self.ellipse_center and self.ellipse_size and sum(self.ellipse_size) > 1:
             self.control_points = self.calculate_corner_control_points()
-            # calculate_corner_control_points sets self.rotation_handle too
 
         if drawing_mode == 'ellipse':
-            # Check if user clicked rotation handle
-            if self.rotation_handle and abs(pos.x() - self.rotation_handle[0]) < 10 and abs(
-                    pos.y() - self.rotation_handle[1]) < 10:
+            # Convert pos, control_points, rotation_handle to displayed coords for hit testing
+            disp_pos = (pos.x() / self.scale_x, pos.y() / self.scale_y)
+            disp_cp = [(p[0] / self.scale_x, p[1] / self.scale_y) for p in self.control_points]
+            disp_rh = None
+            if self.rotation_handle:
+                disp_rh = (self.rotation_handle[0] / self.scale_x, self.rotation_handle[1] / self.scale_y)
+
+            # Check rotation handle hit (radius ~7 displayed pixels)
+            if disp_rh and ((abs(disp_pos[0] - disp_rh[0]) < 7) and (abs(disp_pos[1] - disp_rh[1]) < 7)):
                 self.is_rotating = True
                 self.start_point = pos
                 self.initial_angle = math.degrees(math.atan2(self.start_point.y() - self.ellipse_center[1],
                                                              self.start_point.x() - self.ellipse_center[0]))
                 return
 
-            # Check if user clicked on a control point
-            for idx, point in enumerate(self.control_points):
-                if abs(pos.x() - point[0]) < 10 and abs(pos.y() - point[1]) < 10:
+            # Check control points hit (radius ~5 displayed pixels)
+            for idx, dp in enumerate(disp_cp):
+                if abs(disp_pos[0] - dp[0]) < 5 and abs(disp_pos[1] - dp[1]) < 5:
                     self.is_dragging_point = True
                     self.dragged_point_idx = idx
                     return
 
-            # Check if user clicked inside ellipse to drag
+            # Check if inside ellipse for dragging
             if self.ellipse_center and self.is_point_inside_ellipse(pos):
                 self.is_dragging_ellipse = True
                 self.start_point = pos
@@ -254,6 +266,7 @@ class EllipseManager:
                 # Start drawing a new ellipse
                 self.start_point = pos
                 self.is_drawing = True
+
         elif drawing_mode == 'points':
             if event.button() == Qt.LeftButton:
                 self.drawing_points.append((pos.x(), pos.y()))
