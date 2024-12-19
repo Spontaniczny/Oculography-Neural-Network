@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup
+    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget,
+    QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup, QCheckBox
 )
 from PyQt5.QtCore import Qt
 
@@ -42,8 +43,11 @@ class MediaEditorGUI(QMainWindow):
         self.alpha_slider = QSlider(Qt.Horizontal)
         self.alpha_slider.setMinimum(0)
         self.alpha_slider.setMaximum(255)
-        self.alpha_slider.setValue(127)  # Default alpha
+        self.alpha_slider.setValue(80)  # Default alpha
         self.alpha_label = QLabel("Ellipse Alpha:")
+
+        self.next_frame_checkbox = QCheckBox("Go to next frame after saving")
+        self.next_frame_checkbox.setChecked(False)
 
     def setup_layout(self):
         frame_control_layout = QHBoxLayout()
@@ -73,6 +77,7 @@ class MediaEditorGUI(QMainWindow):
         layout.addLayout(load_buttons_layout)
         layout.addLayout(drawing_mode_layout)
         layout.addLayout(alpha_layout)
+        layout.addWidget(self.next_frame_checkbox)
         layout.addWidget(self.save_button)
         layout.addWidget(self.delete_button)
 
