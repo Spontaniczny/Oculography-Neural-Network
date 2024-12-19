@@ -12,6 +12,8 @@ class MediaEditorGUI(QMainWindow):
     def initialize_variables(self):
         self.setWindowTitle("Media Frame Editor with Ellipses")
         self.video_label = QLabel(self)
+        # self.video_label.setFixedSize(400, 400)  # Fixed 400x400 display area
+
         self.slider = QSlider(Qt.Horizontal, self)
         self.frame_input = QLineEdit(self)
         self.frame_label = QLabel(self)
@@ -36,6 +38,13 @@ class MediaEditorGUI(QMainWindow):
         self.fit_ellipse_button = QPushButton("Fit Ellipse")
         self.fit_ellipse_button.setEnabled(False)  # Disabled by default
 
+        # Alpha slider for ellipse interior
+        self.alpha_slider = QSlider(Qt.Horizontal)
+        self.alpha_slider.setMinimum(0)
+        self.alpha_slider.setMaximum(255)
+        self.alpha_slider.setValue(127)  # Default alpha
+        self.alpha_label = QLabel("Ellipse Alpha:")
+
     def setup_layout(self):
         frame_control_layout = QHBoxLayout()
         frame_control_layout.addWidget(self.prev_frame_button)
@@ -53,12 +62,17 @@ class MediaEditorGUI(QMainWindow):
         drawing_mode_layout.addWidget(self.draw_points_radio)
         drawing_mode_layout.addWidget(self.fit_ellipse_button)
 
+        alpha_layout = QHBoxLayout()
+        alpha_layout.addWidget(self.alpha_label)
+        alpha_layout.addWidget(self.alpha_slider)
+
         layout = QVBoxLayout()
         layout.addWidget(self.video_label)
         layout.addWidget(self.slider)
         layout.addLayout(frame_control_layout)
         layout.addLayout(load_buttons_layout)
         layout.addLayout(drawing_mode_layout)
+        layout.addLayout(alpha_layout)
         layout.addWidget(self.save_button)
         layout.addWidget(self.delete_button)
 
