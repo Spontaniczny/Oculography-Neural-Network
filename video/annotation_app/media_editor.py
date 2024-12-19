@@ -126,7 +126,8 @@ class MediaEditor(MediaEditorGUI):
 
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_manager.has_ellipse():
-            data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'data')
+            data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'annotated_data')
+            data_dir = os.path.join(data_dir, self.media_player.media_name)
             os.makedirs(data_dir, exist_ok=True)
 
             # Determine frame_name based on media type
