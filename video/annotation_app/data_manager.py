@@ -11,17 +11,32 @@ class DataManager:
         annotations_dir = os.path.join(data_dir, 'annotations')
         os.makedirs(frames_dir, exist_ok=True)
         os.makedirs(annotations_dir, exist_ok=True)
+
         frame_filename = os.path.join(frames_dir, f"{media_name}_frame_{frame_idx}.png")
         binary_filename = os.path.join(annotations_dir, f"{media_name}_frame_{frame_idx}.png")
         cv2.imwrite(frame_filename, current_frame)
         cv2.imwrite(binary_filename, binary_mask)
-        self.save_to_csv(media_name, frame_idx, ellipse_info, data_dir)
 
-    def save_to_csv(self, media_name, frame_idx, ellipse_info, data_dir):
+        self.save_to_csv(f"{media_name}_frame_{frame_idx}", ellipse_info, data_dir)
+
+    def save_image(self, image_name, current_frame, binary_mask, ellipse_info, data_dir):
+        images_dir = os.path.join(data_dir, 'frames')
+        annotations_dir = os.path.join(data_dir, 'annotations')
+        os.makedirs(images_dir, exist_ok=True)
+        os.makedirs(annotations_dir, exist_ok=True)
+
+        image_filename = os.path.join(images_dir, f"{image_name}.png")
+        binary_filename = os.path.join(annotations_dir, f"{image_name}.png")
+        cv2.imwrite(image_filename, current_frame)
+        cv2.imwrite(binary_filename, binary_mask)
+
+        self.save_to_csv(image_name, ellipse_info, data_dir)
+
+    def save_to_csv(self, frame_name, ellipse_info, data_dir):
         csv_filename = os.path.join(data_dir, 'ellipse_info.csv')
         rows = []
         new_entry = [
-            f"{media_name}_frame_{frame_idx}",
+            frame_name,
             ellipse_info['center_x'],
             ellipse_info['center_y'],
             ellipse_info['size_x'],
