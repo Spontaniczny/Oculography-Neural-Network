@@ -153,6 +153,11 @@ class MediaEditor(MediaEditorGUI):
                 )
                 print(f"Saved frame {self.media_player.media_name}_frame_{self.current_frame_idx}")
 
+            if self.next_frame_checkbox.isChecked():
+                self.next_frame()
+        else:
+            print("No ellipse to save")
+
 
 
     def go_to_frame(self):
