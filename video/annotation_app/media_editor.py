@@ -265,3 +265,11 @@ class MediaEditor(MediaEditorGUI):
                 # If the user releases outside the displayed area, just finalize normally
                 self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
             self.update_video_display()
+
+    def keyPressEvent(self, a0):
+        # if z is pressed
+        if a0.key() == 90:
+            self.fit_ellipse()
+        # if x is pressed
+        elif a0.key() == 88:
+            self.save_frame()
