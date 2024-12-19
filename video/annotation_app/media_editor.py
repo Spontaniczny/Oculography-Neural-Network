@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 from PyQt5.QtCore import Qt, QPointF, QPoint
 from gui import MediaEditorGUI
 from video_player import VideoPlayer
@@ -26,6 +28,9 @@ class MediaEditor(MediaEditorGUI):
         self.current_frame_idx = 0
         self.setMouseTracking(True)
         self.video_label.setMouseTracking(True)
+
+        self.gamma_slider.valueChanged.connect(self.update_video_display)
+        self.contrast_slider.valueChanged.connect(self.update_video_display)
 
         # Drawing mode: 'ellipse' or 'points'
         self.drawing_mode = 'ellipse'
@@ -98,8 +103,10 @@ class MediaEditor(MediaEditorGUI):
         if self.current_frame is None:
             return
 
-        height, width, _ = self.current_frame.shape
-        frame_pixmap = self.ellipse_manager.get_frame_pixmap(self.current_frame)
+        display_frame = self.apply_contrast_and_gamma(self.current_frame)
+
+        height, width, _ = display_frame.shape
+        frame_pixmap = self.ellipse_manager.get_frame_pixmap(display_frame)
         scaled_pixmap = frame_pixmap.scaled(self.window_width, self.window_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         self.displayed_width = scaled_pixmap.width()
@@ -118,6 +125,28 @@ class MediaEditor(MediaEditorGUI):
         final_pixmap = self.ellipse_manager.draw_overlay_on_pixmap(scaled_pixmap, self.scale_x, self.scale_y,
                                                                    self.drawing_mode)
         self.video_label.setPixmap(final_pixmap)
+
+    def apply_contrast_and_gamma(self, frame):
+        # Convert sliders to factors
+        gamma_slider_value = self.gamma_slider.value()  # 50 to 150
+        gamma = gamma_slider_value / 100.0  # 100 -> 1.0, 50 -> 0.5, 150 -> 1.5
+
+        contrast_slider_value = self.contrast_slider.value()  # 50 to 150
+        contrast = contrast_slider_value / 100.0  # 100 -> 1.0, 50->0.5, 150->1.5
+
+        # Apply contrast first:
+        # alpha = contrast factor, beta = 0 (no brightness shift)
+        adjusted = cv2.convertScaleAbs(frame, alpha=contrast, beta=0)
+
+        # Apply gamma correction:
+        # Gamma correction: out = ((in/255)^(1/gamma))*255
+        # Create a lookup table for efficiency
+        inv_gamma = 1.0 / gamma
+        table = ((np.arange(256) / 255.0) ** inv_gamma) * 255
+        table = np.clip(table, 0, 255).astype(np.uint8)
+        adjusted = cv2.LUT(adjusted, table)
+
+        return adjusted
 
 
     def delete_ellipse_or_points(self):

@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget,
-    QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup, QCheckBox
+    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup, QCheckBox
 )
 from PyQt5.QtCore import Qt
 
@@ -46,8 +45,24 @@ class MediaEditorGUI(QMainWindow):
         self.alpha_slider.setValue(80)  # Default alpha
         self.alpha_label = QLabel("Ellipse Alpha:")
 
+        # Gamma slider
+        self.gamma_label = QLabel("Gamma:")
+        self.gamma_slider = QSlider(Qt.Horizontal)
+        self.gamma_slider.setMinimum(50)
+        self.gamma_slider.setMaximum(150)
+        self.gamma_slider.setValue(100)  # 100 = gamma 1.0
+
+        # Contrast slider
+        self.contrast_label = QLabel("Contrast:")
+        self.contrast_slider = QSlider(Qt.Horizontal)
+        self.contrast_slider.setMinimum(50)
+        self.contrast_slider.setMaximum(150)
+        self.contrast_slider.setValue(100)  # 100 = contrast 1.0
+
+        # Checkbox to go to next frame after saving
         self.next_frame_checkbox = QCheckBox("Go to next frame after saving")
         self.next_frame_checkbox.setChecked(False)
+
 
     def setup_layout(self):
         frame_control_layout = QHBoxLayout()
@@ -70,6 +85,14 @@ class MediaEditorGUI(QMainWindow):
         alpha_layout.addWidget(self.alpha_label)
         alpha_layout.addWidget(self.alpha_slider)
 
+        gamma_layout = QHBoxLayout()
+        gamma_layout.addWidget(self.gamma_label)
+        gamma_layout.addWidget(self.gamma_slider)
+
+        contrast_layout = QHBoxLayout()
+        contrast_layout.addWidget(self.contrast_label)
+        contrast_layout.addWidget(self.contrast_slider)
+
         layout = QVBoxLayout()
         layout.addWidget(self.video_label)
         layout.addWidget(self.slider)
@@ -77,6 +100,8 @@ class MediaEditorGUI(QMainWindow):
         layout.addLayout(load_buttons_layout)
         layout.addLayout(drawing_mode_layout)
         layout.addLayout(alpha_layout)
+        layout.addLayout(gamma_layout)
+        layout.addLayout(contrast_layout)
         layout.addWidget(self.next_frame_checkbox)
         layout.addWidget(self.save_button)
         layout.addWidget(self.delete_button)
