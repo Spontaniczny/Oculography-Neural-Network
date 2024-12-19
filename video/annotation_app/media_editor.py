@@ -183,50 +183,53 @@ class MediaEditor(MediaEditorGUI):
 
     # Mouse events need to be forwarded to ellipse manager
     def mousePressEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
 
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mousePressEvent(new_event, QPoint(0, 0), self.drawing_mode)
-        self.update_video_display()
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mousePressEvent(new_event, QPoint(0, 0), self.drawing_mode)
+            self.update_video_display()
 
     def mouseMoveEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mouseMoveEvent(new_event, QPoint(0, 0), self.drawing_mode)
-        self.update_video_display()
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mouseMoveEvent(new_event, QPoint(0, 0), self.drawing_mode)
+            self.update_video_display()
 
     def mouseReleaseEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mouseReleaseEvent(new_event, self.drawing_mode)
-        else:
-            # If the user releases outside the displayed area, just finalize normally
-            self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
-        self.update_video_display()
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mouseReleaseEvent(new_event, self.drawing_mode)
+            else:
+                # If the user releases outside the displayed area, just finalize normally
+                self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
+            self.update_video_display()
