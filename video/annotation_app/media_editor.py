@@ -112,6 +112,9 @@ class MediaEditor(MediaEditorGUI):
         self.offset_x = (self.window_width - self.displayed_width) / 2
         self.offset_y = (self.window_height - self.displayed_height) / 2
 
+        # Set scale factors in ellipse manager
+        self.ellipse_manager.set_scale_factors(self.scale_x, self.scale_y)
+
         final_pixmap = self.ellipse_manager.draw_overlay_on_pixmap(scaled_pixmap, self.scale_x, self.scale_y,
                                                                    self.drawing_mode)
         self.video_label.setPixmap(final_pixmap)
