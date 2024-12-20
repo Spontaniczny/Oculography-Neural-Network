@@ -1,1 +1,2 @@
-from .ellipse import Ellipse, find_ellipse, fit_ellipse
+from .ellipse_utils import find_ellipse, fit_ellipse
+from .ellipse import Ellipse
