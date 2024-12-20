@@ -17,7 +17,9 @@ class DataManager:
         cv2.imwrite(frame_filename, current_frame)
         cv2.imwrite(binary_filename, binary_mask)
 
-        self.save_to_csv(f"{media_name}_frame_{frame_idx}", ellipse_info, data_dir)
+        frame_height, frame_width, _ = current_frame.shape
+
+        self.save_to_csv(f"{media_name}_frame_{frame_idx}", frame_width, frame_height, ellipse_info, data_dir)
 
     def save_image(self, image_name, current_frame, binary_mask, ellipse_info, data_dir):
         images_dir = os.path.join(data_dir, 'frames')
@@ -30,21 +32,27 @@ class DataManager:
         cv2.imwrite(image_filename, current_frame)
         cv2.imwrite(binary_filename, binary_mask)
 
-        self.save_to_csv(image_name, ellipse_info, data_dir)
+        frame_height, frame_width, _ = current_frame.shape
 
-    def save_to_csv(self, frame_name, ellipse_info, data_dir):
-        csv_filename = os.path.join(data_dir, 'ellipse_info.csv')
+        self.save_to_csv(image_name, frame_width, frame_height, ellipse_info, data_dir)
+
+    def save_to_csv(self, frame_name, frame_width, frame_height, ellipse_info, data_dir):
+        csv_dir = os.path.join(data_dir, 'metadata')
+        os.makedirs(csv_dir, exist_ok=True)
+        csv_filename = os.path.join(csv_dir, 'metadata.csv')
         rows = []
         new_entry = [
             frame_name,
+            frame_width,
+            frame_height,
             ellipse_info['center_x'],
             ellipse_info['center_y'],
             ellipse_info['size_x'],
             ellipse_info['size_y'],
-            ellipse_info['angle']
+            ellipse_info['angle'] % 180
         ]
         if not os.path.exists(csv_filename):
-            rows.append(["frame_name", "center_x", "center_y", "size_x", "size_y", "angle"])
+            rows.append(["filename", "w", "h", "x_center", "y_center", "major_axis", "minor_axis", "rotate_angle"])
         if os.path.exists(csv_filename):
             with open(csv_filename, mode='r', newline='') as file:
                 reader = csv.reader(file)
