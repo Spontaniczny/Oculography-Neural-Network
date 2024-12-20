@@ -5,6 +5,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms import InterpolationMode
+from .image_transforms import CorrectFormat
 
 
 class InferenceDataset(Dataset):
@@ -19,6 +20,7 @@ class InferenceDataset(Dataset):
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize((net_input_size, net_input_size), InterpolationMode.BILINEAR),
+            CorrectFormat()
         ])
         self.image_paths = self.get_images_in_dir(image_dir)
 
@@ -29,8 +31,7 @@ class InferenceDataset(Dataset):
             lambda filename: filename.lower().endswith(('.jpg', '.png')), 
             file_names
         )
-        image_paths = list(map(lambda image: f"{dir_path}/{image}", images))
-        
+        image_paths = sorted(list(map(lambda image: f"{dir_path}/{image}", images)))
         return image_paths
 
     def __len__(self):
@@ -39,4 +40,4 @@ class InferenceDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         input_img = self.transform_in(Image.open(img_path))
-        return input_img[0].unsqueeze(0)
+        return input_img

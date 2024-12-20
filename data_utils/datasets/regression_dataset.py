@@ -6,6 +6,7 @@ from typing import Optional
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms import InterpolationMode
+from .image_transforms import CorrectFormat
 
 
 class RegressionDataset(Dataset):
@@ -32,6 +33,7 @@ class RegressionDataset(Dataset):
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize((net_input_size, net_input_size), InterpolationMode.BILINEAR),
+            CorrectFormat()
         ]) 
     
 

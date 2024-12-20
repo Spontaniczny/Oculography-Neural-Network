@@ -29,7 +29,8 @@ def infer_dataset(
         save_width: int, 
         save_height: int,
         remove_artifacts: bool,
-        device: str
+        device: str,
+        max_images: int
     ) -> None:
     
     saving_path = f"results/{save_folder}"
@@ -44,13 +45,17 @@ def infer_dataset(
 
     frame_count = 0
     for batch in loader:
+        
         out = model.predict_mask(batch.to(device))
         out = out.to("cpu")
         batch = batch.to("cpu")
 
         for i, (input_image, result_mask) in enumerate(zip(batch, out)):
+            print(i)
             if remove_artifacts:
-                result_mask, ellipse = find_ellipse(result_mask)
+                mask, ellipse = find_ellipse(result_mask)
+                result_mask = mask.float()
+                # print(mask.dtype, result_mask.dtype)
 
             in_im: Image.Image = to_pil(resize_bilinear(input_image))
             in_im.save(f"{saving_path}/frame_{frame_count:05d}.png", format="png")
@@ -63,6 +68,8 @@ def infer_dataset(
             annotation_image.resize((save_width, save_height)).save(f"{saving_path}/annotated_{frame_count:05d}.png", format="png")
 
             frame_count += 1
+            if frame_count >= max_images >= 0:
+                return
 
 
 def argparser() -> argparse.ArgumentParser:
@@ -104,6 +111,12 @@ def argparser() -> argparse.ArgumentParser:
         default=False
     )
 
+    parser.add_argument(
+        "--max_images",
+        type=int,
+        default=-1
+    )
+
     return parser
 
 
@@ -118,7 +131,7 @@ def main():
     model = load_model(config, args.model_config).to(device)
 
     ds = InferenceDataset(args.dataset_path)
-    data_loader = DataLoader(ds, batch_size=32, shuffle=False)
+    data_loader = DataLoader(ds, batch_size=32, shuffle=True)
 
     infer_dataset(
         model, 
@@ -127,7 +140,8 @@ def main():
         save_width=args.save_height, 
         save_height=args.save_height,
         remove_artifacts=args.remove_artifacts,
-        device=device
+        device=device,
+        max_images=args.max_images
     )
 
 

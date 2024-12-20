@@ -2,10 +2,10 @@ python -m train.init_training \
     --net_type segmentation \
     --backbone mobile_net_small \
     --input_size 256 \
-    --dataset "datasets/rat_eye/.*" \
+    --dataset "datasets/annotated_data/2022_06_01_A_video" \
     --augment True \
     --loss_type dice \
     --optimizer AdamW \
     --patience 10 \
     --max_epochs 100 \
-    --batch_size 128
+    --batch_size 16
