@@ -3,7 +3,13 @@ import torch
 import torchvision.transforms.v2 as v2
 from PIL import Image
 import numpy as np
-from .model_loading import load_dataloader, load_config_file, load_model
+from .model_loading import load_config_file, load_model
+from data_utils.datasets import InferenceDataset
+from torch.utils.data import DataLoader
+import argparse
+from models import BaseNet
+from train.helper_functions import choose_device
+from ellipse import find_ellipse
 
 
 def apply_mask_on_original(original_rgba: Image.Image, mask: np.ndarray) -> Image.Image:
@@ -16,44 +22,113 @@ def apply_mask_on_original(original_rgba: Image.Image, mask: np.ndarray) -> Imag
     annotated = Image.alpha_composite(original_rgba, green_mask)
     return annotated
 
-
-def save_results(input_batch: torch.Tensor, result_masks: torch.Tensor, save_folder: str):
+def infer_dataset(
+        model: BaseNet, 
+        loader: DataLoader,
+        save_folder: str, 
+        save_width: int, 
+        save_height: int,
+        remove_artifacts: bool,
+        device: str
+    ) -> None:
+    
     saving_path = f"results/{save_folder}"
     if not os.path.exists(saving_path):
         os.mkdir(saving_path)
     
-    resize_bilinear = v2.Resize((512, 512), interpolation=v2.InterpolationMode.BILINEAR)
-    resize_nearest = v2.Resize((512, 512), interpolation=v2.InterpolationMode.NEAREST)
+    resize_bilinear = v2.Resize((save_width, save_height), interpolation=v2.InterpolationMode.BILINEAR)
+    resize_nearest = v2.Resize((save_width, save_height), interpolation=v2.InterpolationMode.NEAREST)
     to_pil = v2.ToPILImage()
 
-    for i, (input_image, result_mask) in enumerate(zip(input_batch, result_masks)):
-        in_im: Image.Image = to_pil(resize_bilinear(input_image))
-        in_im.save(f"{saving_path}/frame_{i:05d}.png", format="png")
+    model.eval()
 
-        res_im: Image.Image = to_pil(resize_nearest(result_mask))
-        res_im.save(f"{saving_path}/mask_{i:05d}.png", format="png")
+    frame_count = 0
+    for batch in loader:
+        out = model.predict_mask(batch.to(device))
+        out = out.to("cpu")
+        batch = batch.to("cpu")
 
-        in_im = to_pil(input_image).convert("RGBA")
-        annotation_image = apply_mask_on_original(in_im, result_mask.numpy().squeeze())
-        annotation_image.resize((512, 512)).save(f"{saving_path}/annotated_{i:05d}.png", format="png")
+        for i, (input_image, result_mask) in enumerate(zip(batch, out)):
+            if remove_artifacts:
+                result_mask, ellipse = find_ellipse(result_mask)
 
+            in_im: Image.Image = to_pil(resize_bilinear(input_image))
+            in_im.save(f"{saving_path}/frame_{frame_count:05d}.png", format="png")
+
+            res_im: Image.Image = to_pil(resize_nearest(result_mask))
+            res_im.save(f"{saving_path}/mask_{frame_count:05d}.png", format="png")
+
+            in_im = to_pil(input_image).convert("RGBA")
+            annotation_image = apply_mask_on_original(in_im, result_mask.numpy().squeeze())
+            annotation_image.resize((save_width, save_height)).save(f"{saving_path}/annotated_{frame_count:05d}.png", format="png")
+
+            frame_count += 1
+
+
+def argparser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--dataset_path",
+        type=str,
+        required=True
+    )
+
+    parser.add_argument(
+        "--model_config",
+        type=str,
+        required=True,
+    )
+
+    parser.add_argument(
+        "--save_width",
+        type=int,
+        default=512,
+    )
+
+    parser.add_argument(
+        "--save_height",
+        type=int,
+        default=512,
+    )
+
+    parser.add_argument(
+        "--save_folder",
+        type=str,
+        default="1",
+    )
+
+    parser.add_argument(
+        "--remove_artifacts",
+        type=bool,
+        default=False
+    )
+
+    return parser
 
 
 def main():
-    config_path = "saved_models/ellipsenet/17:12:2024-14:42:43_finetuning.json"
-    config = load_config_file(config_path)
-
-    model = load_model(config, config_path)
-    dataset_path = "datasets/rat_eye/01|02"
-    data_loader = load_dataloader(config, dataset_path)
-
-    batch, _ = next(iter(data_loader))
-
-    model.eval()
-    with torch.no_grad():
-        out = model.predict_mask(batch)
     
-    save_results(batch, out, "3")
+    parser = argparser()
+    args = parser.parse_args()
+
+    device = choose_device()
+
+    config = load_config_file(args.model_config)
+    model = load_model(config, args.model_config).to(device)
+
+    ds = InferenceDataset(args.dataset_path)
+    data_loader = DataLoader(ds, batch_size=32, shuffle=False)
+
+    infer_dataset(
+        model, 
+        data_loader, 
+        save_folder=args.save_folder,
+        save_width=args.save_height, 
+        save_height=args.save_height,
+        remove_artifacts=args.remove_artifacts,
+        device=device
+    )
 
 
 if __name__ == "__main__":
