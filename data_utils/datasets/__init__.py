@@ -2,3 +2,4 @@ from .segmentation_dataset import SegmentationDataset
 from .segmentation_augmentation import SegmentationAugmented
 from .regression_dataset import RegressionDataset
 from .regression_augmentation import RegressionAugmented
+from .inference_dataset import InferenceDataset

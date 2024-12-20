@@ -38,12 +38,7 @@ class SegmentationDataset(Dataset):
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize((net_input_size, net_input_size), InterpolationMode.NEAREST),
-        ])
-
-    def get_example_with_metadata(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, pd.Series]:
-        img_data = self._data.iloc[idx]
-        return *self.__getitem__(idx), img_data
-    
+        ])    
 
     def __len__(self):
         return len(self._data)
