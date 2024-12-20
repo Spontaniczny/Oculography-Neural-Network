@@ -17,6 +17,7 @@ class MediaEditorGUI(QMainWindow):
         self.slider = QSlider(Qt.Horizontal, self)
         self.frame_input = QLineEdit(self)
         self.frame_label = QLabel(self)
+        self.media_label = QLabel(self)
         self.save_button = QPushButton("Save Frame", self)
         self.load_video_button = QPushButton("Load Video", self)
         self.load_images_button = QPushButton("Load Images", self)
@@ -77,6 +78,7 @@ class MediaEditorGUI(QMainWindow):
         frame_control_layout.addWidget(self.frame_input)
         frame_control_layout.addWidget(self.max_frames_label)
         frame_control_layout.addWidget(self.frame_label)
+        frame_control_layout.addWidget(self.media_label)
         frame_control_layout.addWidget(self.next_frame_button)
 
         load_buttons_layout = QHBoxLayout()
