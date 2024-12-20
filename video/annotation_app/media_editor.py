@@ -99,6 +99,9 @@ class MediaEditor(MediaEditorGUI):
             self.update_video_display()
         self.frame_label.setText(f"Current Frame: {frame_idx}")
 
+        if hasattr(self.media_player, 'image_names'):
+            self.media_label.setText(f"Filename: {self.media_player.image_names[self.current_frame_idx]}")
+
     def update_video_display(self):
         if self.current_frame is None:
             return
