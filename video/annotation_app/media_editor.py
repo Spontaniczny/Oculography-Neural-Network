@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 from PyQt5.QtCore import Qt, QPointF, QPoint
 from gui import MediaEditorGUI
 from video_player import VideoPlayer
@@ -43,7 +45,10 @@ class MediaEditor(MediaEditorGUI):
         self.fit_ellipse_button.clicked.connect(self.fit_ellipse)
 
         # Connect alpha slider to update ellipse alpha
-        self.alpha_slider.valueChanged.connect(self.update_ellipse_alpha)
+        self.alpha_slider.valueChanged.connect(self.update_video_display)
+        self.edge_alpha_slider.valueChanged.connect(self.update_video_display)
+        self.gamma_slider.valueChanged.connect(self.update_video_display)
+        self.contrast_slider.valueChanged.connect(self.update_video_display)
 
     def update_ellipse_alpha(self, value):
         self.ellipse_manager.set_alpha(value)
@@ -94,12 +99,17 @@ class MediaEditor(MediaEditorGUI):
             self.update_video_display()
         self.frame_label.setText(f"Current Frame: {frame_idx}")
 
+        if hasattr(self.media_player, 'image_names'):
+            self.media_label.setText(f"Filename: {self.media_player.image_names[self.current_frame_idx]}")
+
     def update_video_display(self):
         if self.current_frame is None:
             return
 
-        height, width, _ = self.current_frame.shape
-        frame_pixmap = self.ellipse_manager.get_frame_pixmap(self.current_frame)
+        display_frame = self.apply_contrast_and_gamma(self.current_frame)
+
+        height, width, _ = display_frame.shape
+        frame_pixmap = self.ellipse_manager.get_frame_pixmap(display_frame)
         scaled_pixmap = frame_pixmap.scaled(self.window_width, self.window_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         self.displayed_width = scaled_pixmap.width()
@@ -115,9 +125,34 @@ class MediaEditor(MediaEditorGUI):
         # Set scale factors in ellipse manager
         self.ellipse_manager.set_scale_factors(self.scale_x, self.scale_y)
 
+        self.ellipse_manager.set_alpha(self.alpha_slider.value())
+        self.ellipse_manager.set_edge_alpha(self.edge_alpha_slider.value())
+
         final_pixmap = self.ellipse_manager.draw_overlay_on_pixmap(scaled_pixmap, self.scale_x, self.scale_y,
                                                                    self.drawing_mode)
         self.video_label.setPixmap(final_pixmap)
+
+    def apply_contrast_and_gamma(self, frame):
+        # Convert sliders to factors
+        gamma_slider_value = self.gamma_slider.value()  # 50 to 150
+        gamma = gamma_slider_value / 100.0  # 100 -> 1.0, 50 -> 0.5, 150 -> 1.5
+
+        contrast_slider_value = self.contrast_slider.value()  # 50 to 150
+        contrast = contrast_slider_value / 100.0  # 100 -> 1.0, 50->0.5, 150->1.5
+
+        # Apply contrast first:
+        # alpha = contrast factor, beta = 0 (no brightness shift)
+        adjusted = cv2.convertScaleAbs(frame, alpha=contrast, beta=0)
+
+        # Apply gamma correction:
+        # Gamma correction: out = ((in/255)^(1/gamma))*255
+        # Create a lookup table for efficiency
+        inv_gamma = 1.0 / gamma
+        table = ((np.arange(256) / 255.0) ** inv_gamma) * 255
+        table = np.clip(table, 0, 255).astype(np.uint8)
+        adjusted = cv2.LUT(adjusted, table)
+
+        return adjusted
 
 
     def delete_ellipse_or_points(self):
@@ -126,7 +161,8 @@ class MediaEditor(MediaEditorGUI):
 
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_manager.has_ellipse():
-            data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'data')
+            data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'annotated_data')
+            data_dir = os.path.join(data_dir, self.media_player.media_name)
             os.makedirs(data_dir, exist_ok=True)
 
             # Determine frame_name based on media type
@@ -153,6 +189,11 @@ class MediaEditor(MediaEditorGUI):
                 )
                 print(f"Saved frame {self.media_player.media_name}_frame_{self.current_frame_idx}")
 
+            if self.next_frame_checkbox.isChecked():
+                self.next_frame()
+        else:
+            print("No ellipse to save")
+
 
 
     def go_to_frame(self):
@@ -177,50 +218,61 @@ class MediaEditor(MediaEditorGUI):
 
     # Mouse events need to be forwarded to ellipse manager
     def mousePressEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
 
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mousePressEvent(new_event, QPoint(0, 0), self.drawing_mode)
-        self.update_video_display()
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mousePressEvent(new_event, QPoint(0, 0), self.drawing_mode)
+            self.update_video_display()
 
     def mouseMoveEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mouseMoveEvent(new_event, QPoint(0, 0), self.drawing_mode)
-        self.update_video_display()
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mouseMoveEvent(new_event, QPoint(0, 0), self.drawing_mode)
+            self.update_video_display()
 
     def mouseReleaseEvent(self, event):
-        label_pos = event.pos() - self.video_label.pos()
-        img_x = label_pos.x() - self.offset_x
-        img_y = label_pos.y() - self.offset_y
-        if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
-            original_x = img_x * self.scale_x
-            original_y = img_y * self.scale_y
-            new_event = QMouseEvent(event.type(),
-                                    QPointF(original_x, original_y),
-                                    event.button(),
-                                    event.buttons(),
-                                    event.modifiers())
-            self.ellipse_manager.mouseReleaseEvent(new_event, self.drawing_mode)
-        else:
-            # If the user releases outside the displayed area, just finalize normally
-            self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
-        self.update_video_display()
+        if self.current_frame is not None:
+            label_pos = event.pos() - self.video_label.pos()
+            img_x = label_pos.x() - self.offset_x
+            img_y = label_pos.y() - self.offset_y
+            if 0 <= img_x < self.displayed_width and 0 <= img_y < self.displayed_height:
+                original_x = img_x * self.scale_x
+                original_y = img_y * self.scale_y
+                new_event = QMouseEvent(event.type(),
+                                        QPointF(original_x, original_y),
+                                        event.button(),
+                                        event.buttons(),
+                                        event.modifiers())
+                self.ellipse_manager.mouseReleaseEvent(new_event, self.drawing_mode)
+            else:
+                # If the user releases outside the displayed area, just finalize normally
+                self.ellipse_manager.mouseReleaseEvent(event, self.drawing_mode)
+            self.update_video_display()
+
+    def keyPressEvent(self, a0):
+        # if z is pressed
+        if a0.key() == 90:
+            self.fit_ellipse()
+        # if x is pressed
+        elif a0.key() == 88:
+            self.save_frame()
