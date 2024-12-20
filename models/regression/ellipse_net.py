@@ -48,6 +48,7 @@ class EllipseNet(BaseNet):
         x = self.mlp(x)
         return x
     
+    @torch.inference_mode()
     def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
         params = self(batch)
         B, C, w, h = batch.shape

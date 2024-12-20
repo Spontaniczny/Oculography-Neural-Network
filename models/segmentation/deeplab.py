@@ -97,6 +97,7 @@ class DeepLab(BaseNet):
     def predict_binary(self, x: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
         return self.predict_proba(x) > threshold
     
+    @torch.inference_mode()
     def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
         mask = self.predict_binary(batch).float()
         return mask
