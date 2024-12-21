@@ -276,3 +276,6 @@ class MediaEditor(MediaEditorGUI):
         # if x is pressed
         elif a0.key() == 88:
             self.save_frame()
+        # if d is pressed
+        elif a0.key() == 68:
+            self.delete_ellipse_or_points()
