@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+from typing import Optional
 from ..backbones import init_backbone
 from .. import BaseNet
 
@@ -98,8 +99,8 @@ class DeepLab(BaseNet):
         return self.predict_proba(x) > threshold
     
     @torch.inference_mode()
-    def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
-        mask = self.predict_binary(batch).float()
+    def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
+        mask = self.predict_binary(batch, threshold).float()
         return mask
     
     

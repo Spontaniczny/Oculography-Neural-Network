@@ -8,6 +8,7 @@ from .argparser import parse_training_args, training_config
 
 from evaluation.segmentation import compute_loss_metrics, binary_metrics, plot_precision_recall, plot_roc
 from evaluation.regression import regression_evaluation_metrics
+from evaluation.mask_evaluation import final_evaluation
 
 from callbacks import TrainingLogger
 from datetime import datetime
@@ -19,7 +20,7 @@ def main():
     args = parse_training_args()
     
     logger = TrainingLogger(
-        project_name="rat_eye", 
+        project_name="rat_eye_final", 
         run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
         config=vars(args) | {"finetuning" : "no"}
     )
@@ -66,11 +67,11 @@ def main():
     # Model evaluation
     print("Model evaluation")
     if args.net_type == "segmentation":
-        loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou", "mcc"], args.net_type, device)
+        loss_metrics = compute_loss_metrics(net, test_loader, ["mae", "dice", "iou", "mcc", "focal", "bce"], args.net_type, device)
         b_metrics = binary_metrics(net, test_loader, device)
 
-        logger.save_scalar_metrics(loss_metrics)
-        logger.save_metrics_table(b_metrics, "Binary prediction eval metrics")
+        logger.save_scalar_metrics(loss_metrics, "loss_metrics")
+        logger.save_metrics_table(b_metrics, "Binary_eval_metrics")
 
         prc_curve = plot_precision_recall(b_metrics)
         roc_curve = plot_roc(b_metrics)
@@ -78,8 +79,11 @@ def main():
         logger.save_fig("prc_curve", prc_curve)
         logger.save_fig("roc_curve", roc_curve)
     else:
-        metrics = regression_evaluation_metrics(net, test_loader, "cpu")
-        logger.save_scalar_metrics(metrics)
+        loss_metrics = regression_evaluation_metrics(net, test_loader, "cpu")
+        logger.save_scalar_metrics(loss_metrics, "loss_metrics")
+
+    final_metrics = final_evaluation(net, test_loader, device)
+    logger.save_scalar_metrics(final_metrics, "final_metrics")
 
     print("Saving net parameters and config")
     # Saving neural network
