@@ -279,3 +279,11 @@ class MediaEditor(MediaEditorGUI):
         # if d is pressed
         elif a0.key() == 68:
             self.delete_ellipse_or_points()
+        # elif left a is pressed
+        elif a0.key() == 65:
+            self.prev_frame()
+        # elif s is pressed
+        elif a0.key() == 83:
+            self.next_frame()
+
+
