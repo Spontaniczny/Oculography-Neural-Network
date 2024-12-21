@@ -1,9 +1,9 @@
 python -m train.fine_tune \
-    --net_config_file saved_models/deeplab/17:12:2024-00:40:58.json \
+    --net_config_file saved_models/ellipsenet/21:12:2024-00:40:48.json \
     --input_size 256 \
-    --dataset "datasets/rat_eye/01|02" \
-    --loss_type dice \
+    --dataset "datasets/annotated_data/2022_06_01_A_video" \
+    --loss_type smooth_l1_area \
     --optimizer AdamW \
-    --patience 30 \
-    --max_epochs 200 \
-    --batch_size 32
+    --patience 10 \
+    --max_epochs 100 \
+    --batch_size 16

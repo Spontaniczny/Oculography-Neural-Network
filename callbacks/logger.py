@@ -13,11 +13,16 @@ def authenticate_wandb() -> bool:
     if not load_dotenv():
         raise ValueError("Could not find dotenv file")
     
-    wandb_key = os.environ.get("key")
+    wandb_key = os.environ.get("WANDB_API_KEY")
     if wandb_key is None:
-        raise ValueError("No wandb key Could not authenticate")
+        raise ValueError(
+            '''
+            Environmental variable WANDB_API_KEY needs to be set in order 
+            to authenticate.
+            '''
+        )
     
-    if not wandb.login(key=wandb_key, verify=True):
+    if not wandb.login(verify=True):
         raise ValueError("Invalid authentication key")
     
     return True
@@ -43,9 +48,7 @@ class TrainingLogger:
         batch_average_loss = current_loss / batch
         print(f"Batch: {batch}")
         print(f"Current batch loss: {batch_average_loss}")
-        wandb.log({
-            "Current average batch loss": batch_average_loss,
-        })
+
 
     def on_epoch_end(self, epoch: int, train_loss: float, val_loss: float):
         print(f"End of epoch {epoch + 1}")
@@ -70,14 +73,6 @@ class TrainingLogger:
 
     def on_training_end(self):
         epochs = len(self.training_losses)
-
-        df = pd.DataFrame.from_dict({
-            "training_losses": self.training_losses,
-            "validation_losses": self.validation_losses
-        })
-        table = wandb.Table(dataframe=df)
-        wandb.log({"(Train/Val)_loss": table})
-
         plt.xticks(range(epochs))
         plt.plot(self.training_losses, color='red', label="Training loss")
         plt.plot(self.validation_losses, color='blue', label="Validation loss")
@@ -87,17 +82,15 @@ class TrainingLogger:
 
         buffer = BytesIO()
         plt.savefig(buffer, format='png')
-        self.save_fig(fig_name="Train/val_loss_plot", buffer=buffer)
+        self.save_fig(fig_name="Train_val_loss_plot", buffer=buffer)
         plt.close()
 
 
     def save_fig(self, fig_name: str, buffer: BytesIO):
-        wandb.log({
-            fig_name: wandb.Image(Image.open(buffer)),
-        })
+        wandb.summary[fig_name] = wandb.Image(Image.open(buffer))
 
-    def save_scalar_metrics(self, metrics: dict[str, float]):
-        wandb.summary["metrics"] = metrics
+    def save_scalar_metrics(self, metrics: dict[str, float], metrics_name: str):
+        wandb.summary[metrics_name] = metrics
 
     def save_metrics_table(self, metrics: dict[str, torch.Tensor], metrics_name: str):
         for key in metrics.keys():
@@ -105,7 +98,7 @@ class TrainingLogger:
 
         df = pd.DataFrame.from_dict(metrics)
         table = wandb.Table(dataframe=df)
-        wandb.log({metrics_name: table})
+        wandb.summary[metrics_name] = table
 
 
 if __name__ == "__main__":

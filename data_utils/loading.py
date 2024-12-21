@@ -16,7 +16,7 @@ def find_annotations(data_dir_path: str):
     if os.path.exists(annotations):
         return "labels"
     
-    raise FileNotFoundError("Could not find annotations folder")
+    raise FileNotFoundError(f"Could not find annotations folder {annotations}")
 
 
 def find_frames(data_dir_path: str):
@@ -24,18 +24,26 @@ def find_frames(data_dir_path: str):
     if os.path.exists(frames):
         return "frames"
     
-    raise FileNotFoundError("Could not find frames folder")
+    raise FileNotFoundError(f"Could not find frames folder {frames}")
     
+def process_filename(filename):
+    if filename.endswith('.png'):
+        return filename
+    elif filename.endswith('.jpg'):
+        return filename.replace('.jpg', '.png')
+    else:
+        return filename + '.png'
 
 def load_and_prepare_metadata(data_dir_path: str) -> pd.DataFrame:
     metadata_path = os.path.join(data_dir_path, 'metadata', 'metadata.csv')
     if not os.path.exists(metadata_path):
-        raise FileNotFoundError("Could not find metadata file")
+        raise FileNotFoundError(f"Could not find metadata file {metadata_path}")
     
     data = pd.read_csv(metadata_path)
     frames = find_frames(data_dir_path)
     annotations = find_annotations(data_dir_path)
 
+    data['filename'] = data['filename'].apply(process_filename)
     data['annotation'] = data_dir_path + f'/{annotations}/' + data.filename.str.replace(r'jpg', 'png')
     data['frame'] = data_dir_path + f'/{frames}/' + data.filename
     return data
