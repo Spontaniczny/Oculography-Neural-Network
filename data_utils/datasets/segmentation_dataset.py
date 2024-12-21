@@ -5,7 +5,7 @@ from typing import Optional
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms import InterpolationMode
-
+from .image_transforms import CorrectFormat
 
 
 class SegmentationDataset(Dataset):
@@ -32,18 +32,15 @@ class SegmentationDataset(Dataset):
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize((net_input_size, net_input_size), InterpolationMode.BILINEAR),
+            CorrectFormat()
         ]) 
 
         self.transform_out = v2.Compose([
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize((net_input_size, net_input_size), InterpolationMode.NEAREST),
-        ])
-
-    def get_example_with_metadata(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, pd.Series]:
-        img_data = self._data.iloc[idx]
-        return *self.__getitem__(idx), img_data
-    
+            CorrectFormat()
+        ])    
 
     def __len__(self):
         return len(self._data)
@@ -52,4 +49,4 @@ class SegmentationDataset(Dataset):
         img_data = self._data.iloc[idx]
         input_img = self.transform_in(Image.open(img_data.frame))
         output_img = self.transform_out(Image.open(img_data.annotation))
-        return input_img, output_img[0].unsqueeze(0)
+        return input_img, output_img

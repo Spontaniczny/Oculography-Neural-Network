@@ -4,6 +4,7 @@ import os
 import json
 import datetime
 from abc import ABC, abstractmethod
+from typing import Optional
 
 class BaseNet(nn.Module, ABC):
 
@@ -60,5 +61,5 @@ class BaseNet(nn.Module, ABC):
         return trainable_params
         
     @abstractmethod
-    def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
+    def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
         pass
