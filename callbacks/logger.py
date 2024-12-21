@@ -89,8 +89,8 @@ class TrainingLogger:
     def save_fig(self, fig_name: str, buffer: BytesIO):
         wandb.summary[fig_name] = wandb.Image(Image.open(buffer))
 
-    def save_scalar_metrics(self, metrics: dict[str, float]):
-        wandb.summary["metrics"] = metrics
+    def save_scalar_metrics(self, metrics: dict[str, float], metrics_name: str):
+        wandb.summary[metrics_name] = metrics
 
     def save_metrics_table(self, metrics: dict[str, torch.Tensor], metrics_name: str):
         for key in metrics.keys():

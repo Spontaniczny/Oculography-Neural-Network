@@ -3,6 +3,7 @@ import torch.nn as nn
 from ..backbones import init_backbone
 from .. import BaseNet
 from ellipse import Ellipse
+from typing import Optional
 
 class EllipseNet(BaseNet):
     def __init__(self, 
@@ -49,7 +50,7 @@ class EllipseNet(BaseNet):
         return x
     
     @torch.inference_mode()
-    def predict_mask(self, batch: torch.Tensor) -> torch.Tensor:
+    def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
         params = self(batch)
         B, C, w, h = batch.shape
         ellipses = []

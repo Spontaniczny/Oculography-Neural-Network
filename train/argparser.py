@@ -42,7 +42,7 @@ def add_training_args(parser: argparse.ArgumentParser) -> None:
         "smooth_l1", 
         "weighted_smooth_l1",
         "sin_smooth_l1",
-        "gaussian"
+        "smooth_l1_area"
     ]
 
     parser.add_argument(

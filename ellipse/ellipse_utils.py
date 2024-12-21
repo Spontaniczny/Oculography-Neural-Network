@@ -4,6 +4,7 @@ import torch
 from skimage.morphology import ellipse as create_ellipse
 from skimage.feature import canny
 from .ellipse import Ellipse
+from typing import Tuple, Optional
 
 
 def find_circle_radius(mask: np.ndarray) -> int:
@@ -72,11 +73,16 @@ def remove_blobs_and_fill_areas(mask: np.ndarray) -> np.ndarray:
     return filled_image
 
 
-def find_ellipse(mask: torch.Tensor, denoise: bool = True) -> tuple[torch.Tensor, Ellipse]:
+def remove_noise(mask: torch.Tensor, find_ellipse: bool = True) -> Tuple[torch.Tensor, Optional[Ellipse]]:
     mask = mask.squeeze().numpy()
-    
+
     # denoised_mask = get_rid_of_noise(mask) if denoise else mask
-    denoised_mask = remove_blobs_and_fill_areas(mask) if denoise else mask
+    denoised_mask = remove_blobs_and_fill_areas(mask)
+
+    if not find_ellipse:
+        tensor_mask = torch.Tensor(denoised_mask).unsqueeze(0)
+        tensor_mask = tensor_mask > 0.5
+        return tensor_mask, None
 
     ellipse = fit_ellipse(denoised_mask)
     mask = ellipse.draw_ellipse()
