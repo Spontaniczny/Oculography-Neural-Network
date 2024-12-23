@@ -82,8 +82,11 @@ def main():
         loss_metrics = regression_evaluation_metrics(net, test_loader, "cpu")
         logger.save_scalar_metrics(loss_metrics, "loss_metrics")
 
-    final_metrics = final_evaluation(net, test_loader, device)
-    logger.save_scalar_metrics(final_metrics, "final_metrics")
+    final_metrics_basic, final_metrics_refined, pupil_sizes = final_evaluation(net, test_loader, device)
+    logger.save_scalar_metrics(final_metrics_basic, "final_metrics_basic")
+    logger.save_scalar_metrics(final_metrics_refined, "final_metrics_refined")
+
+    logger.save_metrics_table(pupil_sizes, "Pupil Sizes")
 
     print("Saving net parameters and config")
     # Saving neural network

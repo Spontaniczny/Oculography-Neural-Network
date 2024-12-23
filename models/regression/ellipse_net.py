@@ -52,11 +52,14 @@ class EllipseNet(BaseNet):
     @torch.inference_mode()
     def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
         params = self(batch)
-        B, C, w, h = batch.shape
+        return self.draw_ellipse(params)
+    
+    def draw_ellipse(self, params_batch: torch.Tensor) -> torch.Tensor:
+        w = self.input_size
         ellipses = []
-        for ellipse_params in params:
-            ellipse = Ellipse(*(ellipse_params[:-1]*w), ellipse_params[-1].item()*180, (w, h))
+        for ellipse_params in params_batch:
+            ellipse = Ellipse(*(ellipse_params[:-1]*w), ellipse_params[-1].item()*180, (w, w))
             ellipses.append(torch.Tensor(ellipse.draw_ellipse()))
-        
-        return torch.stack(ellipses).reshape(-1, 1, w, h)
+
+        return torch.stack(ellipses).reshape(-1, 1, w, w)
     

@@ -7,7 +7,7 @@ from .helper_functions import get_loss_function, get_core_optimizer, choose_devi
 
 from evaluation.segmentation import compute_loss_metrics, binary_metrics, plot_precision_recall, plot_roc
 from evaluation.regression import regression_evaluation_metrics
-from evaluation import mask_evaluation
+from evaluation.mask_evaluation import final_evaluation
 
 from callbacks import TrainingLogger
 from datetime import datetime
@@ -79,9 +79,11 @@ def main():
         loss_metrics = regression_evaluation_metrics(net, test_loader, "cpu")
         logger.save_scalar_metrics(loss_metrics, "loss_metrics")
 
-    final_metrics = mask_evaluation(net, test_loader, device)
-    logger.save_scalar_metrics(final_metrics, "final_metrics")
+    final_metrics_basic, final_metrics_refined, pupil_sizes = final_evaluation(net, test_loader, device)
+    logger.save_scalar_metrics(final_metrics_basic, "final_metrics_basic")
+    logger.save_scalar_metrics(final_metrics_refined, "final_metrics_refined")
 
+    logger.save_metrics_table(pupil_sizes, "Pupil Sizes")
     print("Saving net parameters and config")
     # Saving neural network
     net.save_model(nn_config, finetuning=True)
