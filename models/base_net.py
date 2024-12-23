@@ -63,3 +63,7 @@ class BaseNet(nn.Module, ABC):
     @abstractmethod
     def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
         pass
+
+    @abstractmethod
+    def draw_ellipse(self, params_batch: torch.Tensor) -> torch.Tensor:
+        pass
