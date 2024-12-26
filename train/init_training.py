@@ -2,6 +2,7 @@ from models.segmentation import DeepLab
 from models.regression import EllipseNet
 from .training import train
 from .helper_functions import get_loss_function, get_core_optimizer, choose_device
+from inference import load_config_file, load_model
 
 from data_utils import load_dataset, prepare_dataloaders
 from .argparser import parse_training_args, training_config
@@ -18,12 +19,6 @@ def main():
 
     # Parsing command line arguments
     args = parse_training_args()
-    
-    logger = TrainingLogger(
-        project_name="rat_eye_final", 
-        run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
-        config=vars(args) | {"finetuning" : "no"}
-    )
 
     # Preparing dataset and train, validation and test data_loaders
     ds = load_dataset(args.dataset, input_size=args.input_size, dataset_type=args.net_type)
@@ -31,22 +26,36 @@ def main():
         ds, [0.6, 0.2, 0.2], args.net_type, batch_size=args.batch_size, augment=args.augment
     )
 
-    # Preparing net and moving it to the correct device
-    if args.net_type == "segmentation":
-        net = DeepLab(backbone=args.backbone, input_size=args.input_size)
-    else:
-        net = EllipseNet(backbone=args.backbone, input_size=args.input_size)
-
     device = choose_device()
+
+    if (config_path := args.finetuning):
+        config = load_config_file(config_path)
+        net = load_model(config, config_path)
+        net.freeze_backbone()
+
+        print(f"Finetuning {config["net_type"]} model on device: {device}")
+    else:
+        # Preparing net and moving it to the correct device
+        if args.net_type == "segmentation":
+            net = DeepLab(backbone=args.backbone, input_size=args.input_size)
+        else:
+            net = EllipseNet(backbone=args.backbone, input_size=args.input_size)
+
+        print(f"Training {args.net_type} model on device: {device}")
+
     net.to(device)
 
-    print(f"Training {args.net_type} model on device: {device}")
+    logger = TrainingLogger(
+        project_name="rat_eye_final", 
+        run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
+        config=vars(args) | {"finetuning" : "yes" if args.finetuning else "no"}
+    )
 
     criterion = get_loss_function(args.loss_type, args.net_type)
     criterion = criterion.to(device)
     print(f"Minimizing {args.loss_type} loss")
 
-    optimizer = get_core_optimizer(args.optimizer)(net.parameters())
+    optimizer = get_core_optimizer(args.optimizer)(net.get_trainable_params())
     print(f"Using {args.optimizer} optimizer")
 
     nn_config = training_config(args)
@@ -89,7 +98,7 @@ def main():
     logger.save_metrics_table(pupil_sizes, "Pupil Sizes")
 
     print("Saving net parameters and config")
-    # Saving neural network
+    # Saving neural network 
     net.save_model(nn_config)
     # logger.save_onnx_model(net, input_tensor=torch.randn(1, 1, args.input_size, args.input_size))
 
