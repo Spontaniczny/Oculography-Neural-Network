@@ -103,4 +103,7 @@ class DeepLab(BaseNet):
         mask = self.predict_binary(batch, threshold).float()
         return mask
     
+    def draw_ellipse(self, params_batch: torch.Tensor) -> torch.Tensor:
+        return params_batch
+    
     

@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms import InterpolationMode
 from .image_transforms import CorrectFormat
+from natsort import natsorted
 
 
 class InferenceDataset(Dataset):
@@ -31,7 +32,8 @@ class InferenceDataset(Dataset):
             lambda filename: filename.lower().endswith(('.jpg', '.png')), 
             file_names
         )
-        image_paths = sorted(list(map(lambda image: f"{dir_path}/{image}", images)))
+        
+        image_paths = natsorted(list(map(lambda image: f"{dir_path}/{image}", images)))
         return image_paths
 
     def __len__(self):

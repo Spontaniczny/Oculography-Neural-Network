@@ -8,4 +8,5 @@ python -m train.init_training \
     --optimizer AdamW \
     --patience 10 \
     --max_epochs 100 \
-    --batch_size 16
+    --batch_size 16 \
+    # --finetuning "saved_models/deeplab/26:12:2024-20:43:50.json"
