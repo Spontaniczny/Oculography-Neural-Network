@@ -74,7 +74,7 @@ def infer_dataset(
             for i, (input_image, result_mask) in enumerate(zip(batch, out)):
                 if remove_artifacts:
                     result_mask, ellipse = remove_noise(result_mask, find_ellipse=True)
-                    result_mask = result_mask.mask.float()
+                    result_mask = result_mask.float()
                     # print(mask.dtype, result_mask.dtype)
 
                 if save_step > 0 and frame_count % save_step == 0:
@@ -88,7 +88,7 @@ def infer_dataset(
                     annotation_image = apply_mask_on_original(in_im, result_mask.numpy().squeeze())
                     annotation_image.resize((save_width, save_height)).save(f"{saving_path}/annotated_{frame_count:05d}.png", format="png")
 
-                pupil_sizes.append(result_mask.sum())
+                pupil_sizes.append(result_mask.sum().item())
                 frame_count += 1
                 pbar.update(1)
 
