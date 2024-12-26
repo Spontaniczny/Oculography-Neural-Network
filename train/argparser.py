@@ -10,22 +10,54 @@ def training_config(args: argparse.Namespace) -> dict[str, Any]:
         "input_size": args.input_size,
         "training_data": args.dataset,
         "augment": args.augment,
-        "experiment_id": experiment_id
-    }
-    return nn_config
-
-def finetuning_config(args: argparse.Namespace) -> dict[str, Any]:
-    experiment_id = f"{str(uuid.uuid4())}_finetuning"
-    nn_config = {
-        "base_net_config": args.net_config_file,
-        "input_size": args.input_size,
-        "training_data": args.dataset,
-        "experiment_id": experiment_id
+        "experiment_id": experiment_id,
+        "finetuning": args.finetuning
     }
     return nn_config
 
 
-def add_training_args(parser: argparse.ArgumentParser) -> None:
+def parse_training_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+
+    available_backbones = [
+        "res_net_50",
+        "res_net_34",
+        "res_net_18",
+        "xception",
+        "mobile_net_small",
+        "mobile_net_large"
+    ]
+
+    parser.add_argument(
+        "--net_type",
+        type=str,
+        choices=["segmentation", "regression"],
+        default="segmentation",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--backbone", 
+        type=str, choices=available_backbones, 
+        nargs="?",
+        default="res_net_50",
+        help="Backbone for segmentation net"
+    )
+
+    parser.add_argument(
+        "--augment",
+        type=bool,
+        default=False,
+        help="Path to directory with training data"
+    )
+
+    parser.add_argument(
+        "--finetuning",
+        type=str,
+        default="",
+        help="List to configuration file of a model to be finetuned"
+    )
+
     parser.add_argument(
         "--dataset",
         type=str,
@@ -95,56 +127,6 @@ def add_training_args(parser: argparse.ArgumentParser) -> None:
         help="Size of input images (if smaller rescaling is applied)"
     )
 
-def parse_finetuning_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--net_config_file",
-        type=str,
-        required=True
-    )
-
-    add_training_args(parser)
-    args = parser.parse_args()
-    return args
-
-
-def parse_training_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-
-    available_backbones = [
-        "res_net_50",
-        "res_net_34",
-        "res_net_18",
-        "xception",
-        "mobile_net_small",
-        "mobile_net_large"
-    ]
-
-    parser.add_argument(
-        "--net_type",
-        type=str,
-        choices=["segmentation", "regression"],
-        default="segmentation",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--backbone", 
-        type=str, choices=available_backbones, 
-        nargs="?",
-        default="res_net_50",
-        help="Backbone for segmentation net"
-    )
-
-    parser.add_argument(
-        "--augment",
-        type=bool,
-        default=False,
-        help="Path to directory with training data"
-    )
-
-    add_training_args(parser)
     args = parser.parse_args()
     return args
 
