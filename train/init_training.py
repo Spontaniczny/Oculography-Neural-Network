@@ -20,6 +20,12 @@ def main():
     # Parsing command line arguments
     args = parse_training_args()
 
+    logger = TrainingLogger(
+        project_name="rat_eye_final", 
+        run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
+        config=vars(args) | {"finetuning" : "yes" if args.finetuning else "no"}
+    )
+
     # Preparing dataset and train, validation and test data_loaders
     ds = load_dataset(args.dataset, input_size=args.input_size, dataset_type=args.net_type)
     train_loader, val_loader, test_loader = prepare_dataloaders(
@@ -32,7 +38,6 @@ def main():
         config = load_config_file(config_path)
         net = load_model(config, config_path)
         net.freeze_backbone()
-
         print(f"Finetuning {config["net_type"]} model on device: {device}")
     else:
         # Preparing net and moving it to the correct device
@@ -44,12 +49,6 @@ def main():
         print(f"Training {args.net_type} model on device: {device}")
 
     net.to(device)
-
-    logger = TrainingLogger(
-        project_name="rat_eye_final", 
-        run_name=f"run_{datetime.now().strftime("%d-%m-%Y-%H:%M:%S")}", 
-        config=vars(args) | {"finetuning" : "yes" if args.finetuning else "no"}
-    )
 
     criterion = get_loss_function(args.loss_type, args.net_type)
     criterion = criterion.to(device)
@@ -80,7 +79,7 @@ def main():
         b_metrics = binary_metrics(net, test_loader, device)
 
         logger.save_scalar_metrics(loss_metrics, "loss_metrics")
-        logger.save_metrics_table(b_metrics, "Binary_eval_metrics")
+        logger.save_metrics_table(b_metrics, "binary_eval_metrics")
 
         prc_curve = plot_precision_recall(b_metrics)
         roc_curve = plot_roc(b_metrics)
@@ -94,8 +93,9 @@ def main():
     final_metrics_basic, final_metrics_refined, pupil_sizes = final_evaluation(net, test_loader, device)
     logger.save_scalar_metrics(final_metrics_basic, "final_metrics_basic")
     logger.save_scalar_metrics(final_metrics_refined, "final_metrics_refined")
+    logger.save_scalar_metrics(net.count_params(), "params_count")
 
-    logger.save_metrics_table(pupil_sizes, "Pupil Sizes")
+    logger.save_metrics_table(pupil_sizes, "pupil_sizes")
 
     print("Saving net parameters and config")
     # Saving neural network 
