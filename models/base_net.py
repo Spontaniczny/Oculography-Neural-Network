@@ -59,6 +59,16 @@ class BaseNet(nn.Module, ABC):
                 trainable_params.append(param)
 
         return trainable_params
+    
+    def count_params(self) -> dict[str, int]:
+        backbone_count = sum(p.numel() for p in self.backbone.parameters())
+        all_params = sum(p.numel() for p in self.parameters())
+        head_params = all_params - backbone_count
+        return {
+            "backbone_params_count": backbone_count,
+            "all_params_count": all_params,
+            "head_params_count": head_params
+        }
         
     @abstractmethod
     def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
