@@ -45,7 +45,7 @@ def fit_ellipse(
     else:
         edge_points = find_outline(mask)
     
-    if edge_points is None or len(edge_points) == 0:
+    if edge_points is None or len(edge_points) < 5:
         return Ellipse(mask.shape[0] / 2, mask.shape[1] / 2, 0, 0, 0, mask.shape)
     
     (x_center, y_center), (minor_axis, major_axis), angle = cv2.fitEllipse(edge_points)

@@ -1,4 +1,4 @@
-from models.segmentation import DeepLab
+from models.segmentation import DeepLab, U_NET
 from models.regression import EllipseNet
 from .training import train
 from .helper_functions import get_loss_function, get_core_optimizer, choose_device
@@ -42,7 +42,11 @@ def main():
     else:
         # Preparing net and moving it to the correct device
         if args.net_type == "segmentation":
-            net = DeepLab(backbone=args.backbone, input_size=args.input_size)
+            if args.backbone == "u_net":
+                net = U_NET(input_size=args.input_size, upsampling_method=args.upsampling)
+            else:
+                net = DeepLab(backbone=args.backbone, input_size=args.input_size)
+
         else:
             net = EllipseNet(backbone=args.backbone, input_size=args.input_size)
 

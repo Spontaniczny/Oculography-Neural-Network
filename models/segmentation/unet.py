@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.nn.functional import sigmoid
+from typing import Optional
 from .. import BaseNet
 
 
@@ -12,14 +13,14 @@ def _convolutions(in_channels: int, out_channels: int, padding: int = 1) -> nn.S
         nn.ReLU(),
     )
 
-class U_NET(nn.Module):
+class U_NET(BaseNet):
     
     def __init__(
             self,
-            depth: int = 3,
+            depth: int = 4,
             start_dim_channel_dim: int = 16,
             upsampling_method: str = "conv_transposed",
-            input_size: int = 128
+            input_size: int = 256
         ) -> None:
         
         super().__init__()
@@ -50,8 +51,6 @@ class U_NET(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
         # Downsampling path
-        # x = self.batch_norm2d(x)
-
         residual_blocks = []
         for conv_block in self.downsample[:-1]:
             x = conv_block(x)
@@ -103,4 +102,13 @@ class U_NET(nn.Module):
 
     def predict_binary(self, x: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
         return self.predict_proba(x) > threshold
+    
+
+    @torch.inference_mode()
+    def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
+        mask = self.predict_binary(batch, threshold).float()
+        return mask
+    
+    def draw_ellipse(self, params_batch: torch.Tensor) -> torch.Tensor:
+        return params_batch
     
