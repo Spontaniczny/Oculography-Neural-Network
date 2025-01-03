@@ -49,8 +49,6 @@ class BaseNet(nn.Module, ABC):
         if hasattr(self, 'backbone') and isinstance(self.backbone, nn.Module):
             for param in self.backbone.parameters():
                 param.requires_grad = False
-        else:
-            raise AttributeError("Child class must define 'self.backbone' as an nn.Module.")
         
     def get_trainable_params(self):
         trainable_params = []
@@ -61,14 +59,20 @@ class BaseNet(nn.Module, ABC):
         return trainable_params
     
     def count_params(self) -> dict[str, int]:
-        backbone_count = sum(p.numel() for p in self.backbone.parameters())
         all_params = sum(p.numel() for p in self.parameters())
-        head_params = all_params - backbone_count
-        return {
-            "backbone_params_count": backbone_count,
-            "all_params_count": all_params,
-            "head_params_count": head_params
-        }
+        if hasattr(self, 'backbone') and isinstance(self.backbone, nn.Module):
+            backbone_count = sum(p.numel() for p in self.backbone.parameters())
+            head_params = all_params - backbone_count
+            return {
+                "backbone_params_count": backbone_count,
+                "all_params_count": all_params,
+                "head_params_count": head_params
+            }
+        else:
+            return {
+                "all_params_count": all_params
+            }
+
         
     @abstractmethod
     def predict_mask(self, batch: torch.Tensor, threshold: Optional[float] = 0.5) -> torch.Tensor:
