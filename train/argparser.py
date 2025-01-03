@@ -11,7 +11,8 @@ def training_config(args: argparse.Namespace) -> dict[str, Any]:
         "training_data": args.dataset,
         "augment": args.augment,
         "experiment_id": experiment_id,
-        "finetuning": args.finetuning
+        "finetuning": args.finetuning,
+        "upsampling": args.upsampling
     }
     return nn_config
 
@@ -25,7 +26,8 @@ def parse_training_args() -> argparse.Namespace:
         "res_net_18",
         "xception",
         "mobile_net_small",
-        "mobile_net_large"
+        "mobile_net_large",
+        "u_net",
     ]
 
     parser.add_argument(
@@ -125,6 +127,15 @@ def parse_training_args() -> argparse.Namespace:
         choices=[128, 256, 512],
         required=True,
         help="Size of input images (if smaller rescaling is applied)"
+    )
+
+    parser.add_argument(
+        "--upsampling",
+        type=str,
+        default="conv_transposed",
+        choices=["conv_transposed", "nearest", "bilinear"],
+        required=False,
+        help="Upsamling method applied in case of using u_net"
     )
 
     args = parser.parse_args()

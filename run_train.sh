@@ -9,4 +9,4 @@ python -m train.init_training \
     --patience 10 \
     --max_epochs 100 \
     --batch_size 16 \
-    # --finetuning "saved_models/deeplab/26:12:2024-20:43:50.json"
+    --upsampling "conv_transposed"
