@@ -20,7 +20,6 @@ def load_model(config: dict[str, Any], config_path: str) -> BaseNet:
         if config["backbone"] == "u_net":
             model = U_NET(
                 input_size=config["input_size"],
-                upsampling_method=config["upsampling"]
             )
         else:
             model = DeepLab(
