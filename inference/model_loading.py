@@ -4,7 +4,7 @@ import torch
 from typing import Any, Optional
 from torch.utils.data import DataLoader
 from data_utils import load_dataset
-from models.segmentation import DeepLab
+from models.segmentation import DeepLab, U_NET
 from models.regression import EllipseNet
 from models import BaseNet
 
@@ -17,10 +17,16 @@ def load_config_file(config_path: str) -> dict[str, Any]:
 
 def load_model(config: dict[str, Any], config_path: str) -> BaseNet:
     if config["net_type"] == "segmentation":
-        model = DeepLab(
-            backbone=config["backbone"],
-            input_size=config["input_size"]
-        )
+        if config["backbone"] == "u_net":
+            model = U_NET(
+                input_size=config["input_size"],
+                upsampling_method=config["upsampling"]
+            )
+        else:
+            model = DeepLab(
+                backbone=config["backbone"],
+                input_size=config["input_size"]
+            )
     else:
         model = EllipseNet(
             backbone=config["backbone"],
