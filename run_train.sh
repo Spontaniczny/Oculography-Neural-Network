@@ -1,6 +1,6 @@
 python -m train.init_training \
     --net_type segmentation \
-    --backbone mobile_net_small \
+    --backbone u_net \
     --input_size 256 \
     --dataset "datasets/annotated_data/2022_06_01_A_video/" \
     --augment True \
@@ -9,4 +9,3 @@ python -m train.init_training \
     --patience 10 \
     --max_epochs 100 \
     --batch_size 16 \
-    --upsampling "conv_transposed"
