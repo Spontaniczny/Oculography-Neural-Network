@@ -19,13 +19,11 @@ class U_NET(BaseNet):
             self,
             depth: int = 4,
             start_dim_channel_dim: int = 16,
-            upsampling_method: str = "conv_transposed",
             input_size: int = 256
         ) -> None:
         
         super().__init__()
 
-        assert upsampling_method in ["conv_transposed", "nearest", "bilinear"], "Passed incorrect upsampling method"
         assert depth <= 6, "depth should be an integer in the range [2, 5]"
 
         channel_dim = [start_dim_channel_dim* pow(2, i)  for i in range(depth - 1)]
@@ -36,7 +34,7 @@ class U_NET(BaseNet):
 
         self.pooling_layer = nn.MaxPool2d(2)
         
-        self.upsample = self.create_upsampler(upsampling_method, channel_dim)
+        self.upsample = self.create_upsampler(channel_dim)
     
         self.decoders = nn.ModuleList([
             _convolutions(dim*2, dim)
@@ -74,26 +72,11 @@ class U_NET(BaseNet):
         return x
     
 
-    def create_upsampler(self, method: str, channel_dim: list[int]) -> nn.ModuleList:
-        if method == "conv_transposed":
-            upsamplers = nn.ModuleList([
-                nn.ConvTranspose2d(dim*2, dim, (2, 2), stride=2)
-                for dim in channel_dim[::-1]
-            ])
-        else:
-            if method == "nearest":
-                upsample = nn.UpsamplingNearest2d(scale_factor=2)
-            else:
-                upsample = nn.UpsamplingBilinear2d(scale_factor=2)
-            
-            upsamplers = nn.ModuleList([
-                nn.Sequential(
-                    nn.Conv2d(dim*2, dim, (1, 1), stride=1),
-                    upsample
-                )
-                for dim in channel_dim[::-1]
-            ])
-        
+    def create_upsampler(self, channel_dim: list[int]) -> nn.ModuleList:
+        upsamplers = nn.ModuleList([
+            nn.ConvTranspose2d(dim*2, dim, (2, 2), stride=2)
+            for dim in channel_dim[::-1]
+        ])
         return upsamplers
 
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:

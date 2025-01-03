@@ -43,7 +43,7 @@ def main():
         # Preparing net and moving it to the correct device
         if args.net_type == "segmentation":
             if args.backbone == "u_net":
-                net = U_NET(input_size=args.input_size, upsampling_method=args.upsampling)
+                net = U_NET(input_size=args.input_size)
             else:
                 net = DeepLab(backbone=args.backbone, input_size=args.input_size)
 
