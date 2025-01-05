@@ -2,3 +2,4 @@
 datasets
 .venv
 /annotated_data/
+/extracted_frames/
