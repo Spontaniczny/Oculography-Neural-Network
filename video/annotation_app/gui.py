@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup, QCheckBox
+    QMainWindow, QLabel, QSlider, QVBoxLayout, QPushButton, QWidget, QLineEdit, QHBoxLayout, QRadioButton, QButtonGroup,
+    QCheckBox, QApplication
 )
 from PyQt5.QtCore import Qt
 
@@ -8,9 +9,10 @@ class MediaEditorGUI(QMainWindow):
         super().__init__()
         self.initialize_variables()
         self.setup_layout()
+        self.center_window()
 
     def initialize_variables(self):
-        self.setWindowTitle("Media Frame Editor with Ellipses")
+        self.setWindowTitle("Annotation App")
         self.video_label = QLabel(self)
         # self.video_label.setFixedSize(400, 400)  # Fixed 400x400 display area
 
@@ -123,3 +125,16 @@ class MediaEditorGUI(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def center_window(self):
+        screen_geometry = QApplication.primaryScreen().availableGeometry()
+
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+        window_width = self.width()
+        window_height = self.height()
+
+        x = (screen_width - window_width) // 2  # Center horizontally
+        y = (screen_height - window_height) // 2 - 200  # Center vertically but move 200px higher
+
+        self.move(x, y)
