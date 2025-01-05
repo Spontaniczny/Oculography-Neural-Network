@@ -26,6 +26,7 @@ class VideoFrameExtractor(QWidget):
         self.cap = None
         self.original_width = 0
         self.original_height = 0
+        self.project_name = "Oculography-Neural-Network"
 
         # Variables for playback
         self.playing = False
@@ -459,7 +460,7 @@ class VideoFrameExtractor(QWidget):
             return
 
         # Create output directory
-        out_dir = os.path.join(os.path.dirname(self.video_path), "extracted_frames")
+        out_dir = os.path.join(self.get_project_root_path(), "extracted_frames")
         out_dir = os.path.join(out_dir, os.path.splitext(os.path.basename(self.video_path))[0])
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
@@ -494,6 +495,12 @@ class VideoFrameExtractor(QWidget):
         QMessageBox.information(self, "Done", f"Extracted {extracted_count} frames to {out_dir}")
         self.extractionProgressBar.setVisible(False)
         self.extractionProgressLabel.setVisible(False)
+
+    def get_project_root_path(self):
+        this_file_path = os.path.abspath(__file__)
+        path_parts = this_file_path.split(os.sep)
+        project_root_path = os.sep.join(path_parts[:path_parts.index(self.project_name) + 1])
+        return project_root_path
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

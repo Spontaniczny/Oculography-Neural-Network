@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt, QPointF, QPoint
-from gui import MediaEditorGUI
-from video_player import VideoPlayer
-from image_player import ImagePlayer
-from ellipse_manager import EllipseManager
-from data_manager import DataManager
+from src.annotation_app.gui import MediaEditorGUI
+from src.annotation_app.video_player import VideoPlayer
+from src.annotation_app.image_player import ImagePlayer
+from src.annotation_app.ellipse_manager import EllipseManager
+from src.annotation_app.data_manager import DataManager
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QMouseEvent
 import os
@@ -13,8 +13,9 @@ import os
 class MediaEditor(MediaEditorGUI):
     def __init__(self):
         super().__init__()
-        self.window_width = 600
-        self.window_height = 600
+        self.window_width = 500
+        self.window_height = 500
+        self.project_name = "Oculography-Neural-Network"
         self.video_label.setFixedSize(self.window_width, self.window_height)
         self.initialize_logic()
         self.connect_signals()
@@ -161,7 +162,7 @@ class MediaEditor(MediaEditorGUI):
 
     def save_frame(self):
         if self.current_frame is not None and self.ellipse_manager.has_ellipse():
-            data_dir = os.path.join(os.path.dirname(self.media_player.media_path), 'annotated_data')
+            data_dir = os.path.join(self.get_project_root_path(), 'annotated_data')
             data_dir = os.path.join(data_dir, self.media_player.media_name)
             os.makedirs(data_dir, exist_ok=True)
 
@@ -194,7 +195,11 @@ class MediaEditor(MediaEditorGUI):
         else:
             print("No ellipse to save")
 
-
+    def get_project_root_path(self):
+        this_file_path = os.path.abspath(__file__)
+        path_parts = this_file_path.split(os.sep)
+        project_root_path = os.sep.join(path_parts[:path_parts.index(self.project_name) + 1])
+        return project_root_path
 
     def go_to_frame(self):
         frame_num = int(self.frame_input.text())
@@ -276,3 +281,14 @@ class MediaEditor(MediaEditorGUI):
         # if x is pressed
         elif a0.key() == 88:
             self.save_frame()
+        # if d is pressed
+        elif a0.key() == 68:
+            self.delete_ellipse_or_points()
+        # elif left a is pressed
+        elif a0.key() == 65:
+            self.prev_frame()
+        # elif s is pressed
+        elif a0.key() == 83:
+            self.next_frame()
+
+
