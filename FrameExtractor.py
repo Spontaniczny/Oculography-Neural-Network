@@ -58,10 +58,10 @@ class VideoFrameExtractor(QWidget):
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
         # Buttons to set start/end based on current frame
-        self.setStartButton = QPushButton("Set Start From Video Position")
+        self.setStartButton = QPushButton("Set Start From Current Video Position")
         self.setStartButton.setEnabled(False)
         self.setStartButton.clicked.connect(self.setStartToCurrentFrame)
-        self.setEndButton = QPushButton("Set End From Video Position")
+        self.setEndButton = QPushButton("Set End From Video Current Position")
         self.setEndButton.setEnabled(False)
         self.setEndButton.clicked.connect(self.setEndToCurrentFrame)
 
