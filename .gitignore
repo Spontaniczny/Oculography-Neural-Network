@@ -16,3 +16,4 @@ data_dump/
 wandb
 *.onnx
 notebooks
+model_analysis/
