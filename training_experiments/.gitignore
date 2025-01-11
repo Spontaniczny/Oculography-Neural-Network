@@ -1,0 +1,17 @@
+.idea
+.vscode
+.venv
+.DS_Store
+*__pycache__
+datasets/*
+saved_models/*
+tmp/*
+results/*
+extracted_frames/*
+!*.gitkeep
+*.egg-info
+.env
+wandb
+*.onnx
+notebooks
+model_analysis/
