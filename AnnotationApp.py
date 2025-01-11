@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from src.annotation_app.media_editor import MediaEditor
+from apps.annotation_app.media_editor import MediaEditor
 
 
 def main():
