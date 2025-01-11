@@ -17,3 +17,5 @@ wandb
 *.onnx
 notebooks
 model_analysis/
+/annotated_data/
+/extracted_frames/
