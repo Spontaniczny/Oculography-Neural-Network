@@ -1,1 +1,0 @@
-from .ellipse_net import EllipseNet
