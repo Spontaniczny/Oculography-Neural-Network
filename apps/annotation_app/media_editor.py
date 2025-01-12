@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt, QPointF, QPoint
-from src.annotation_app.gui import MediaEditorGUI
-from src.annotation_app.video_player import VideoPlayer
-from src.annotation_app.image_player import ImagePlayer
-from src.annotation_app.ellipse_manager import EllipseManager
-from src.annotation_app.data_manager import DataManager
+from apps.annotation_app.gui import MediaEditorGUI
+from apps.annotation_app.video_player import VideoPlayer
+from apps.annotation_app.image_player import ImagePlayer
+from apps.annotation_app.ellipse_manager import EllipseManager
+from apps.annotation_app.data_manager import DataManager
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QMouseEvent
 import os
