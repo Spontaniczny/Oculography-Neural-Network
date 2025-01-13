@@ -5,8 +5,7 @@
 *__pycache__
 datasets/*
 saved_models/*
-tmp/*
-results/*
+*/results/*
 extracted_frames/*
 !*.gitkeep
 *.egg-info
@@ -19,3 +18,4 @@ notebooks
 model_analysis/
 /annotated_data/
 /extracted_frames/
+tmp/

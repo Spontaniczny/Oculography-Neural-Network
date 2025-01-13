@@ -27,7 +27,7 @@ def apply_mask_on_original(original_rgba: Image.Image, mask: np.ndarray) -> Imag
     return annotated
 
 
-def save_results_with_plot(save_folder: str, pupil_sizes: int):
+def save_results_with_plot(save_folder: str, pupil_sizes: list[int]):
     size_over_time = pd.DataFrame.from_dict({
         "pupil_size": pupil_sizes
     })

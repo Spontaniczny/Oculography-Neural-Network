@@ -10,6 +10,10 @@ class BaseNet(nn.Module, ABC):
 
     def __init__(self):
         super().__init__()
+
+        if not os.path.exists("./tmp"):
+            os.mkdir("./tmp")
+
         self.saving_folder = "tmp"
         self.saved_weights = None
     
@@ -26,22 +30,30 @@ class BaseNet(nn.Module, ABC):
         else:
             print("No cached weights found")
 
-    def save_model(self, nn_config: dict, finetuning: bool = False):
+    def save_model(self, nn_config: dict, directory: str = ".", finetuning: bool = False) -> str:
         self.to("cpu")
 
         class_name = str.lower(self.__class__.__name__)
-        saving_path = f"saved_models/{class_name}"
 
+        main_dir = f"{directory}/saved_models"
+        if not os.path.exists(main_dir):
+            os.makedirs(main_dir)
+
+        saving_path = f"{main_dir}/{class_name}"
         if not os.path.exists(saving_path):
             os.mkdir(saving_path)
 
         experiment_id = nn_config['experiment_id']
         suffix = "_finetuning" if finetuning else "" 
         now = datetime.datetime.now()
-        with open(f"{saving_path}/{now.strftime("%d:%m:%Y-%H:%M:%S")}{suffix}.json", "w") as outfile: 
+
+        config_path = f"{saving_path}/{now.strftime("%d:%m:%Y-%H:%M:%S")}{suffix}.json"
+        with open(config_path, "w") as outfile: 
             json.dump(nn_config, outfile, indent=4)
 
         torch.save(self.state_dict(), f"{saving_path}/{experiment_id}.pt")
+
+        return config_path
 
 
     def freeze_backbone(self):
